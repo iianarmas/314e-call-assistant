@@ -21,6 +21,9 @@ export function useCallLog() {
           notes: callData.notes || null,
           objections_handled: callData.objections || [],
           outcome: callData.outcome || null, // 'demo', 'discovery', 'no_meeting', etc.
+          opening_script_id: callData.openingScriptId || null,
+          closing_script_id: callData.closingScriptId || null,
+          objection_responses: callData.objectionResponses || null,
           created_at: new Date().toISOString()
         }])
         .select()

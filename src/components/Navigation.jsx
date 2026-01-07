@@ -41,6 +41,26 @@ export default function Navigation() {
             >
               Contacts
             </button>
+            <button
+              onClick={() => navigate('/scripts')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive('/scripts')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Scripts
+            </button>
+            <button
+              onClick={() => navigate('/objections')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive('/objections')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Objections
+            </button>
           </div>
         </div>
       </div>

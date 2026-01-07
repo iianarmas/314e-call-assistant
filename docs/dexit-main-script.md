@@ -13,8 +13,7 @@ What if I tell you that we can automate several tasks that are repetitive in nat
 ---
 
 Health Information Management:
-
-Hi \_\_\_\_, {First} from 314e Corporation a healthcare software and solutions company. If you have a moment to spare, I am curious to know how you currently manage the document workflow using <your EHR> and what is the typical journey for a document from arrival to being fully processed and accessible inside your EHR?
+lly processed and accessible inside your EHR?
 
 Wait for the response and say: Thank you for sharing that vital information. What do you think is the most challenging bit of the process you just described?
 

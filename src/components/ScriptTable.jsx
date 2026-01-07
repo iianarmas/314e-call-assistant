@@ -1,65 +1,68 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 
-export default function ContactTable({
-  contacts,
+export default function ScriptTable({
+  scripts,
   onEdit,
   onDelete,
-  onViewHistory
+  onToggleActive,
+  onCreateVersion
 }) {
-  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [productFilter, setProductFilter] = useState('All')
-  const [triggerFilter, setTriggerFilter] = useState('All')
+  const [typeFilter, setTypeFilter] = useState('All')
+  const [statusFilter, setStatusFilter] = useState('All')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20)
-  const [selectedContacts, setSelectedContacts] = useState(new Set())
   const [columnWidths, setColumnWidths] = useState({
-    checkbox: 40,
-    name: 180,
-    company: 200,
-    title: 180,
+    name: 200,
+    type: 120,
     product: 120,
-    trigger: 140,
-    calls: 80,
-    lastCall: 140,
-    actions: 160
+    approach: 140,
+    version: 80,
+    status: 100,
+    usage: 80,
+    created: 140,
+    actions: 200
   })
   const [resizing, setResizing] = useState(null)
 
-  // Filter and search contacts
-  const filteredContacts = useMemo(() => {
-    let filtered = contacts
+  // Filter and search scripts
+  const filteredScripts = useMemo(() => {
+    let filtered = scripts
 
     if (productFilter !== 'All') {
-      filtered = filtered.filter(c => c.product === productFilter)
+      filtered = filtered.filter(s => s.product === productFilter)
     }
 
-    if (triggerFilter !== 'All' && productFilter === 'Muspell') {
-      filtered = filtered.filter(c => c.trigger_type === triggerFilter)
+    if (typeFilter !== 'All') {
+      filtered = filtered.filter(s => s.script_type === typeFilter)
+    }
+
+    if (statusFilter !== 'All') {
+      const isActive = statusFilter === 'Active'
+      filtered = filtered.filter(s => s.is_active === isActive)
     }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(c =>
-        c.name?.toLowerCase().includes(query) ||
-        c.company?.toLowerCase().includes(query) ||
-        c.title?.toLowerCase().includes(query)
+      filtered = filtered.filter(s =>
+        s.name?.toLowerCase().includes(query) ||
+        s.content?.toLowerCase().includes(query)
       )
     }
 
     return filtered
-  }, [contacts, searchQuery, productFilter, triggerFilter])
+  }, [scripts, searchQuery, productFilter, typeFilter, statusFilter])
 
   // Pagination
-  const totalPages = Math.ceil(filteredContacts.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredScripts.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedContacts = filteredContacts.slice(startIndex, startIndex + itemsPerPage)
+  const paginatedScripts = filteredScripts.slice(startIndex, startIndex + itemsPerPage)
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, productFilter, triggerFilter])
+  }, [searchQuery, productFilter, typeFilter, statusFilter])
 
   // Column resizing
   const handleMouseDown = (column, e) => {
@@ -90,38 +93,12 @@ export default function ContactTable({
     }
   }, [resizing])
 
-  // Selection handlers
-  const handleSelectAll = () => {
-    const allIds = new Set(paginatedContacts.map(c => c.id))
-    setSelectedContacts(allIds)
-  }
-
-  const handleDeselectAll = () => {
-    setSelectedContacts(new Set())
-  }
-
-  const handleToggleContact = (contactId) => {
-    setSelectedContacts(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(contactId)) {
-        newSet.delete(contactId)
-      } else {
-        newSet.add(contactId)
-      }
-      return newSet
-    })
-  }
-
-  const handleCallClick = (contactId) => {
-    navigate(`/call/${contactId}`)
-  }
-
   return (
     <div className="flex flex-col h-full">
       {/* Filters - Fixed */}
       <div className="flex-none bg-white border border-gray-200 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-1">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Search
             </label>
@@ -129,7 +106,7 @@ export default function ContactTable({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Name, company, or title..."
+              placeholder="Name or content..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -140,12 +117,7 @@ export default function ContactTable({
             </label>
             <select
               value={productFilter}
-              onChange={(e) => {
-                setProductFilter(e.target.value)
-                if (e.target.value !== 'Muspell') {
-                  setTriggerFilter('All')
-                }
-              }}
+              onChange={(e) => setProductFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="All">All Products</option>
@@ -154,45 +126,41 @@ export default function ContactTable({
             </select>
           </div>
 
-          {productFilter === 'Muspell' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Trigger Type
-              </label>
-              <select
-                value={triggerFilter}
-                onChange={(e) => setTriggerFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="All">All Triggers</option>
-                <option value="Migration">Migration</option>
-                <option value="Merger">Merger</option>
-                <option value="Acquisition">Acquisition</option>
-                <option value="Upgrade">Upgrade</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Type
+            </label>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="All">All Types</option>
+              <option value="opening">Opening</option>
+              <option value="objection">Objection</option>
+              <option value="closing">Closing</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="All">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
         </div>
 
         <div className="mt-3 flex items-center justify-between">
           <div className="text-sm text-gray-600">
-            Showing {filteredContacts.length} of {contacts.length} contacts
-            {selectedContacts.size > 0 && ` · ${selectedContacts.size} selected`}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleSelectAll}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              Select All
-            </button>
-            <button
-              onClick={handleDeselectAll}
-              className="text-sm text-gray-600 hover:text-gray-800"
-            >
-              Deselect All
-            </button>
+            Showing {filteredScripts.length} of {scripts.length} scripts
           </div>
         </div>
       </div>
@@ -203,14 +171,8 @@ export default function ContactTable({
           <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
             <tr>
               <th
-                style={{ width: columnWidths.checkbox }}
-                className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-t border-b border-l border-gray-200"
-              >
-                ✓
-              </th>
-              <th
                 style={{ width: columnWidths.name }}
-                className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider relative border-r border-t border-b border-gray-200"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider relative border-r border-t border-b border-l border-gray-200"
               >
                 Name
                 <div
@@ -219,23 +181,13 @@ export default function ContactTable({
                 />
               </th>
               <th
-                style={{ width: columnWidths.company }}
+                style={{ width: columnWidths.type }}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider relative border-r border-t border-b border-gray-200"
               >
-                Company
+                Type
                 <div
                   className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500"
-                  onMouseDown={(e) => handleMouseDown('company', e)}
-                />
-              </th>
-              <th
-                style={{ width: columnWidths.title }}
-                className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider relative border-r border-t border-b border-gray-200"
-              >
-                Title
-                <div
-                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500"
-                  onMouseDown={(e) => handleMouseDown('title', e)}
+                  onMouseDown={(e) => handleMouseDown('type', e)}
                 />
               </th>
               <th
@@ -249,33 +201,53 @@ export default function ContactTable({
                 />
               </th>
               <th
-                style={{ width: columnWidths.trigger }}
+                style={{ width: columnWidths.approach }}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider relative border-r border-t border-b border-gray-200"
               >
-                Trigger
+                Approach/Trigger
                 <div
                   className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500"
-                  onMouseDown={(e) => handleMouseDown('trigger', e)}
+                  onMouseDown={(e) => handleMouseDown('approach', e)}
                 />
               </th>
               <th
-                style={{ width: columnWidths.calls }}
+                style={{ width: columnWidths.version }}
                 className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider relative border-r border-t border-b border-gray-200"
               >
-                Calls
+                Ver
                 <div
                   className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500"
-                  onMouseDown={(e) => handleMouseDown('calls', e)}
+                  onMouseDown={(e) => handleMouseDown('version', e)}
                 />
               </th>
               <th
-                style={{ width: columnWidths.lastCall }}
-                className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider relative border-r border-t border-b border-gray-200"
+                style={{ width: columnWidths.status }}
+                className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider relative border-r border-t border-b border-gray-200"
               >
-                Last Call
+                Status
                 <div
                   className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500"
-                  onMouseDown={(e) => handleMouseDown('lastCall', e)}
+                  onMouseDown={(e) => handleMouseDown('status', e)}
+                />
+              </th>
+              <th
+                style={{ width: columnWidths.usage }}
+                className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider relative border-r border-t border-b border-gray-200"
+              >
+                Usage
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500"
+                  onMouseDown={(e) => handleMouseDown('usage', e)}
+                />
+              </th>
+              <th
+                style={{ width: columnWidths.created }}
+                className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider relative border-r border-t border-b border-gray-200"
+              >
+                Created
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500"
+                  onMouseDown={(e) => handleMouseDown('created', e)}
                 />
               </th>
               <th
@@ -287,74 +259,75 @@ export default function ContactTable({
             </tr>
           </thead>
           <tbody className="bg-white">
-            {paginatedContacts.length === 0 ? (
+            {paginatedScripts.length === 0 ? (
               <tr>
                 <td colSpan="9" className="px-4 py-12 text-center text-gray-500 border-b border-l border-r border-gray-200">
-                  {searchQuery || productFilter !== 'All' || triggerFilter !== 'All'
-                    ? 'No contacts match your filters'
-                    : 'No contacts yet. Add one to get started.'}
+                  {searchQuery || productFilter !== 'All' || typeFilter !== 'All' || statusFilter !== 'All'
+                    ? 'No scripts match your filters'
+                    : 'No scripts yet. Add one to get started.'}
                 </td>
               </tr>
             ) : (
-              paginatedContacts.map(contact => (
-                <tr key={contact.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-center border-r border-b border-l border-gray-200">
-                    <input
-                      type="checkbox"
-                      checked={selectedContacts.has(contact.id)}
-                      onChange={() => handleToggleContact(contact.id)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
+              paginatedScripts.map(script => (
+                <tr key={script.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm text-gray-900 border-r border-b border-l border-gray-200">
+                    {script.name}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap border-r border-b border-gray-200">
-                    {contact.name}
+                  <td className="px-4 py-3 text-sm text-gray-600 border-r border-b border-gray-200">
+                    <span className="capitalize">{script.script_type}</span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap border-r border-b border-gray-200">
-                    {contact.company}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap border-r border-b border-gray-200">
-                    {contact.title || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm whitespace-nowrap border-r border-b border-gray-200">
+                  <td className="px-4 py-3 text-sm border-r border-b border-gray-200">
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
-                      contact.product === 'Dexit'
+                      script.product === 'Dexit'
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-purple-100 text-purple-800'
                     }`}>
-                      {contact.product}
+                      {script.product}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap border-r border-b border-gray-200">
-                    {contact.trigger_type || '-'}
+                  <td className="px-4 py-3 text-sm text-gray-600 border-r border-b border-gray-200">
+                    {script.approach || script.trigger_type || '-'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 text-center whitespace-nowrap border-r border-b border-gray-200">
-                    {contact.call_count || 0}
+                  <td className="px-4 py-3 text-sm text-gray-900 text-center border-r border-b border-gray-200">
+                    v{script.version}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap border-r border-b border-gray-200">
-                    {contact.last_call_date ? new Date(contact.last_call_date).toLocaleDateString() : '-'}
+                  <td className="px-4 py-3 text-sm text-center border-r border-b border-gray-200">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
+                      script.is_active
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {script.is_active ? 'Active' : 'Inactive'}
+                    </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-center whitespace-nowrap border-r border-b border-gray-200">
-                    <div className="flex items-center justify-center gap-2">
+                  <td className="px-4 py-3 text-sm text-gray-900 text-center border-r border-b border-gray-200">
+                    {script.usage_count || 0}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 border-r border-b border-gray-200">
+                    {new Date(script.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center border-r border-b border-gray-200">
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
                       <button
-                        onClick={() => handleCallClick(contact.id)}
+                        onClick={() => onEdit(script)}
                         className="text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        Call
-                      </button>
-                      <button
-                        onClick={() => onViewHistory(contact)}
-                        className="text-gray-600 hover:text-gray-800"
-                      >
-                        History
-                      </button>
-                      <button
-                        onClick={() => onEdit(contact)}
-                        className="text-gray-600 hover:text-gray-800"
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => onDelete(contact.id)}
+                        onClick={() => onCreateVersion(script.id)}
+                        className="text-purple-600 hover:text-purple-800 font-medium"
+                      >
+                        Version
+                      </button>
+                      <button
+                        onClick={() => onToggleActive(script.id, script.is_active)}
+                        className="text-gray-600 hover:text-gray-800"
+                      >
+                        {script.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => onDelete(script.id)}
                         className="text-red-600 hover:text-red-800"
                       >
                         Delete
@@ -369,7 +342,7 @@ export default function ContactTable({
       </div>
 
       {/* Pagination - Fixed at bottom */}
-      {filteredContacts.length > itemsPerPage && (
+      {filteredScripts.length > itemsPerPage && (
         <div className="bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between sticky bottom-0">
           <div className="text-sm text-gray-600">
             Page {currentPage} of {totalPages}

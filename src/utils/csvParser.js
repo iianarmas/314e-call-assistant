@@ -1,6 +1,6 @@
 /**
  * Parse CSV file for bulk contact import
- * Expected columns: Name, Company, Title, Product, Trigger Type, Trigger Details, Notes
+ * Supports: First Name + Last Name OR Name columns
  */
 
 export function parseCSV(csvText) {
@@ -12,14 +12,22 @@ export function parseCSV(csvText) {
   // Parse header
   const headers = parseCSVLine(lines[0])
 
-  // Validate required columns
-  const requiredColumns = ['name', 'company', 'product']
+  // Validate required columns (allow either 'name' OR 'first name' + 'last name')
   const normalizedHeaders = headers.map(h => h.toLowerCase().trim())
 
-  for (const required of requiredColumns) {
-    if (!normalizedHeaders.includes(required)) {
-      throw new Error(`Missing required column: ${required}`)
-    }
+  const hasName = normalizedHeaders.includes('name') || normalizedHeaders.includes('full name')
+  const hasFirstLast = normalizedHeaders.includes('first name') && normalizedHeaders.includes('last name')
+
+  if (!hasName && !hasFirstLast) {
+    throw new Error('Missing required column: Either "Name" or both "First Name" and "Last Name"')
+  }
+
+  if (!normalizedHeaders.includes('company') && !normalizedHeaders.includes('organization')) {
+    throw new Error('Missing required column: Company')
+  }
+
+  if (!normalizedHeaders.includes('product')) {
+    throw new Error('Missing required column: Product')
   }
 
   // Parse data rows
@@ -38,6 +46,19 @@ export function parseCSV(csvText) {
         contact[key] = value
       }
     })
+
+    // Combine first name and last name if separate columns
+    if (contact.first_name && contact.last_name) {
+      contact.name = `${contact.first_name} ${contact.last_name}`
+      delete contact.first_name
+      delete contact.last_name
+    } else if (contact.first_name) {
+      contact.name = contact.first_name
+      delete contact.first_name
+    } else if (contact.last_name) {
+      contact.name = contact.last_name
+      delete contact.last_name
+    }
 
     // Validate product
     if (contact.product && !['Dexit', 'Muspell'].includes(contact.product)) {
@@ -100,11 +121,17 @@ function normalizeColumnName(header) {
 
   const columnMap = {
     'name': 'name',
+    'full name': 'name',
+    'first name': 'first_name',
+    'firstname': 'first_name',
+    'last name': 'last_name',
+    'lastname': 'last_name',
     'company': 'company',
     'organization': 'company',
     'title': 'title',
     'position': 'title',
     'role': 'title',
+    'job title': 'title',
     'product': 'product',
     'trigger type': 'trigger_type',
     'trigger': 'trigger_type',
@@ -122,9 +149,10 @@ function normalizeColumnName(header) {
  * Generate CSV template for download
  */
 export function generateCSVTemplate() {
-  const headers = ['Name', 'Company', 'Title', 'Product', 'Trigger Type', 'Trigger Details', 'Notes']
+  const headers = ['First Name', 'Last Name', 'Company', 'Title', 'Product', 'Trigger Type', 'Trigger Details', 'Notes']
   const example = [
-    'John Smith',
+    'John',
+    'Smith',
     'Memorial Hospital',
     'HIM Director',
     'Dexit',

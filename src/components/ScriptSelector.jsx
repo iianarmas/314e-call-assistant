@@ -29,10 +29,33 @@ export default function ScriptSelector({
     )
   }
 
+  const currentScript = availableScripts.find(s => s.id === selectedScriptId)
+  const isAutoSelected = selectedScriptId === autoSelectedScriptId
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4">
+      {/* Selected Script Display - Always visible */}
+      {currentScript && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-blue-900">
+              {currentScript.name}
+              {currentScript.approach && ` (${currentScript.approach})`}
+              {currentScript.trigger_type && ` (${currentScript.trigger_type})`}
+              {' '}v{currentScript.version}
+            </span>
+            {isAutoSelected && (
+              <span className="text-xs text-blue-600 font-medium bg-blue-100 px-2 py-1 rounded">
+                ⭐ Auto-selected
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Dropdown to change script */}
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        Select {scriptType.charAt(0).toUpperCase() + scriptType.slice(1)} Script
+        {currentScript ? 'Change Script' : `Select ${scriptType.charAt(0).toUpperCase() + scriptType.slice(1)} Script`}
       </label>
 
       <select
@@ -41,30 +64,20 @@ export default function ScriptSelector({
         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         {availableScripts.map(script => {
-          const isAutoSelected = script.id === autoSelectedScriptId
           const label = `${script.name} ${script.approach ? `(${script.approach})` : ''} ${script.trigger_type ? `(${script.trigger_type})` : ''} - v${script.version}`
 
           return (
             <option key={script.id} value={script.id}>
-              {isAutoSelected ? '⭐ ' : ''}{label}
+              {label}
             </option>
           )
         })}
       </select>
 
-      {autoSelectedScriptId && (
-        <p className="text-xs text-gray-500 mt-1">
-          ⭐ = Auto-selected based on contact details
+      {isAutoSelected && (
+        <p className="text-xs text-gray-500 mt-2">
+          💡 This script was automatically selected based on {contact.title}
         </p>
-      )}
-
-      {selectedScriptId && (
-        <div className="mt-3 p-3 bg-gray-50 rounded">
-          <p className="text-xs font-medium text-gray-700 mb-1">Preview:</p>
-          <p className="text-xs text-gray-600 line-clamp-3">
-            {availableScripts.find(s => s.id === selectedScriptId)?.content}
-          </p>
-        </div>
       )}
     </div>
   )

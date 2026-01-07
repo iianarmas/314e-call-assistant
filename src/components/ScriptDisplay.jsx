@@ -1,4 +1,4 @@
-export default function ScriptDisplay({ contact, script, loading, onStartCall, callStarted, onRegenerate }) {
+export default function ScriptDisplay({ contact, script, loading, onRegenerate, selectedScript, tokenUsage }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 h-full flex flex-col">
       {/* Contact header */}
@@ -22,16 +22,25 @@ export default function ScriptDisplay({ contact, script, loading, onStartCall, c
             </div>
           </div>
 
-          {/* Start Call Button */}
-          {!callStarted && onStartCall && (
-            <button
-              onClick={onStartCall}
-              disabled={loading}
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Start Call
-            </button>
-          )}
+          {/* Script Info & Status */}
+          <div className="text-right">
+            {selectedScript && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-gray-600">
+                  📄 {selectedScript.name} (v{selectedScript.version})
+                </span>
+                {tokenUsage?.aiGenerated ? (
+                  <span className="text-xs text-green-600 font-medium">
+                    ✓ AI Personalized ({tokenUsage.regenerationCount}x)
+                  </span>
+                ) : (
+                  <span className="text-xs text-blue-600 font-medium">
+                    📋 Template Script
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -48,21 +57,24 @@ export default function ScriptDisplay({ contact, script, loading, onStartCall, c
               {script}
             </div>
             {onRegenerate && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
                 <button
                   onClick={onRegenerate}
                   disabled={loading}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  🔄 Regenerate Script
+                  🔄 Regenerate with AI
                 </button>
+                <span className="text-xs text-gray-500">
+                  (uses tokens)
+                </span>
               </div>
             )}
           </div>
         ) : (
           <div className="text-center py-12 text-gray-500">
             <p>No script available</p>
-            <p className="text-sm mt-2">Click "Start Call" to generate script</p>
+            <p className="text-sm mt-2">Loading script...</p>
           </div>
         )}
       </div>

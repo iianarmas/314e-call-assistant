@@ -25,12 +25,17 @@ export default function CallPage() {
   const [currentScript, setCurrentScript] = useState('')
   const [loadingContact, setLoadingContact] = useState(true)
   const [loadingScripts, setLoadingScripts] = useState(true)
-  const [callStarted, setCallStarted] = useState(false)
   const [selectedOpeningScriptId, setSelectedOpeningScriptId] = useState(null)
   const [autoSelectedOpeningScriptId, setAutoSelectedOpeningScriptId] = useState(null)
+  const [selectedScript, setSelectedScript] = useState(null)
   const [usedScripts, setUsedScripts] = useState({
     opening: null,
     closing: null
+  })
+  const [tokenUsage, setTokenUsage] = useState({
+    aiGenerated: false,
+    regenerationCount: 0,
+    lastRegenerated: null
   })
 
   const { generating, generateOpeningScript, generateObjectionResponse, generateClosingScript } = useScriptGeneration()
@@ -61,28 +66,54 @@ export default function CallPage() {
     fetchContact()
   }, [contactId])
 
-  // Load scripts from docs folder AND database
+  // Load scripts from docs folder AND database with caching
   useEffect(() => {
     async function initScripts() {
-      // Load file-based scripts
-      const loadedScripts = await loadScripts()
-      if (loadedScripts) {
-        setScripts(loadedScripts)
-        const library = buildObjectionLibrary(loadedScripts)
+      // Check sessionStorage cache first
+      const cachedFileScripts = sessionStorage.getItem('file_scripts')
+      const cachedDbScripts = sessionStorage.getItem('db_scripts')
+
+      if (cachedFileScripts && cachedDbScripts) {
+        // Use cached data
+        const parsedFileScripts = JSON.parse(cachedFileScripts)
+        const parsedDbScripts = JSON.parse(cachedDbScripts)
+
+        setScripts(parsedFileScripts)
+        setDatabaseScripts(parsedDbScripts)
+        const library = buildObjectionLibrary(parsedFileScripts)
         setObjectionLibrary(library)
+        setLoadingScripts(false)
+        return
       }
 
-      // Load database scripts
+      // Parallel loading if not cached
       try {
-        const { data, error } = await supabase
-          .from('scripts')
-          .select('*')
-          .order('created_at', { ascending: false })
+        const [loadedScripts, dbResult] = await Promise.all([
+          loadScripts(),
+          supabase
+            .from('scripts')
+            .select('*')
+            .order('created_at', { ascending: false })
+        ])
 
-        if (error) throw error
-        setDatabaseScripts(data || [])
+        // Cache the results
+        if (loadedScripts) {
+          sessionStorage.setItem('file_scripts', JSON.stringify(loadedScripts))
+          setScripts(loadedScripts)
+          const library = buildObjectionLibrary(loadedScripts)
+          setObjectionLibrary(library)
+        }
+
+        if (dbResult.data) {
+          sessionStorage.setItem('db_scripts', JSON.stringify(dbResult.data))
+          setDatabaseScripts(dbResult.data)
+        }
+
+        if (dbResult.error) {
+          console.error('Error loading database scripts:', dbResult.error)
+        }
       } catch (err) {
-        console.error('Error loading database scripts:', err)
+        console.error('Error loading scripts:', err)
       }
 
       setLoadingScripts(false)
@@ -91,25 +122,44 @@ export default function CallPage() {
     initScripts()
   }, [])
 
-  const handleStartCall = async () => {
-    // Auto-select script if none selected
-    if (!selectedOpeningScriptId && databaseScripts.length > 0) {
+  // Auto-select and display RAW script on mount (NO AI generation)
+  useEffect(() => {
+    if (contact && databaseScripts.length > 0 && !selectedOpeningScriptId) {
       const autoScript = selectDatabaseScript(contact, databaseScripts, 'opening')
       if (autoScript) {
         setSelectedOpeningScriptId(autoScript.id)
         setAutoSelectedOpeningScriptId(autoScript.id)
+        setSelectedScript(autoScript)
+        // Display RAW script content immediately (NO tokens used)
+        setCurrentScript(autoScript.content)
+        setUsedScripts(prev => ({ ...prev, opening: autoScript.id }))
       }
     }
+  }, [contact, databaseScripts, selectedOpeningScriptId])
 
-    setCallStarted(true)
-    handleGenerateOpening()
+  // When user manually changes script selection
+  const handleScriptChange = (scriptId) => {
+    setSelectedOpeningScriptId(scriptId)
+    const script = databaseScripts.find(s => s.id === scriptId)
+    if (script) {
+      setSelectedScript(script)
+      // Display RAW script content (NO tokens used)
+      setCurrentScript(script.content)
+      setUsedScripts(prev => ({ ...prev, opening: scriptId }))
+      // Reset AI generation flag when switching scripts
+      setTokenUsage({
+        aiGenerated: false,
+        regenerationCount: 0,
+        lastRegenerated: null
+      })
+    }
   }
 
-  const handleGenerateOpening = async () => {
+  // Regenerate with AI (ONLY when user explicitly clicks)
+  const handleRegenerateWithAI = async () => {
     let baseScriptContent = ''
     let scriptId = null
 
-    // Use manually selected script, or auto-selected, or fallback to file-based
     if (selectedOpeningScriptId) {
       const dbScript = databaseScripts.find(s => s.id === selectedOpeningScriptId)
       if (dbScript) {
@@ -118,9 +168,6 @@ export default function CallPage() {
 
         // Increment usage count
         await incrementScriptUsage(scriptId, supabase)
-
-        // Track which script was used
-        setUsedScripts(prev => ({ ...prev, opening: scriptId }))
       }
     } else {
       // Fall back to file-based scripts
@@ -132,13 +179,15 @@ export default function CallPage() {
 
     if (result.success) {
       setCurrentScript(result.script)
+      // Track token usage
+      setTokenUsage(prev => ({
+        aiGenerated: true,
+        regenerationCount: prev.regenerationCount + 1,
+        lastRegenerated: new Date().toISOString()
+      }))
     } else {
       setCurrentScript('Error generating script. Please try again.')
     }
-  }
-
-  const handleRegenerateOpening = () => {
-    handleGenerateOpening()
   }
 
   const handleObjectionResponse = async (objectionOrResponse, type) => {
@@ -192,7 +241,7 @@ export default function CallPage() {
   }
 
   const handleEndCall = async () => {
-    // Save call log to database with script tracking
+    // Save call log to database with script tracking AND token usage
     const callData = {
       qualificationData: sessionData.qualificationData,
       notes: sessionData.notes,
@@ -200,7 +249,9 @@ export default function CallPage() {
       outcome: sessionData.outcome,
       openingScriptId: usedScripts.opening,
       closingScriptId: usedScripts.closing,
-      objectionResponses: sessionData.objections // Store objections as JSONB
+      objectionResponses: sessionData.objections,
+      aiGenerated: tokenUsage.aiGenerated,
+      regenerationCount: tokenUsage.regenerationCount
     }
 
     await saveCallLog(contactId, callData)
@@ -243,14 +294,14 @@ export default function CallPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Script Display + Objection Handler + Closing */}
           <div className="space-y-4">
-            {/* Script Selector - shown before call starts */}
-            {!callStarted && databaseScripts.length > 0 && (
+            {/* Script Selector - always visible */}
+            {databaseScripts.length > 0 && (
               <ScriptSelector
                 contact={contact}
                 scripts={databaseScripts}
                 scriptType="opening"
                 selectedScriptId={selectedOpeningScriptId}
-                onSelectScript={setSelectedOpeningScriptId}
+                onSelectScript={handleScriptChange}
                 autoSelectedScriptId={autoSelectedOpeningScriptId}
               />
             )}
@@ -259,9 +310,9 @@ export default function CallPage() {
               contact={contact}
               script={currentScript}
               loading={generating}
-              onStartCall={handleStartCall}
-              callStarted={callStarted}
-              onRegenerate={callStarted ? handleRegenerateOpening : null}
+              onRegenerate={handleRegenerateWithAI}
+              selectedScript={selectedScript}
+              tokenUsage={tokenUsage}
             />
 
             {/* Objection Handler */}

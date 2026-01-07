@@ -1,5 +1,7 @@
 # Database Schema Updates for Phase 3
 
+## Initial Schema (Run First)
+
 Run these SQL commands in your Supabase SQL Editor:
 
 ```sql
@@ -44,4 +46,18 @@ CREATE INDEX IF NOT EXISTS idx_scripts_type ON scripts(script_type);
 CREATE INDEX IF NOT EXISTS idx_scripts_active ON scripts(is_active);
 CREATE INDEX IF NOT EXISTS idx_custom_objections_product ON custom_objections(product);
 CREATE INDEX IF NOT EXISTS idx_call_logs_script_ids ON call_logs(opening_script_id, closing_script_id);
+```
+
+## Token Tracking Update (Run After Phase 3 Optimization)
+
+Add token usage tracking to call_logs table:
+
+```sql
+-- Add token tracking columns to call_logs
+ALTER TABLE call_logs
+ADD COLUMN IF NOT EXISTS ai_generated BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS regeneration_count INTEGER DEFAULT 0;
+
+-- Create index for analytics
+CREATE INDEX IF NOT EXISTS idx_call_logs_ai_usage ON call_logs(ai_generated, regeneration_count);
 ```

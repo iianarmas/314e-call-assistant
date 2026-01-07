@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useScripts } from '../hooks/useScripts'
 import ScriptTable from '../components/ScriptTable'
 import AddScriptModal from '../components/AddScriptModal'
@@ -19,6 +19,13 @@ export default function ScriptsPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingScript, setEditingScript] = useState(null)
+
+  // Clear script cache when component unmounts (user navigates away)
+  useEffect(() => {
+    return () => {
+      sessionStorage.removeItem('db_scripts')
+    }
+  }, [])
 
   const handleEdit = (script) => {
     setEditingScript(script)

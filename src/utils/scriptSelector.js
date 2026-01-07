@@ -18,17 +18,34 @@ export function selectDatabaseScript(contact, scripts, scriptType = 'opening') {
 
   // For Dexit opening scripts, match by approach
   if (product === 'Dexit' && scriptType === 'opening') {
-    // Determine approach from title
-    const isIT = title?.toLowerCase().includes('it') ||
-                 title?.toLowerCase().includes('information technology') ||
-                 title?.toLowerCase().includes('director of applications') ||
-                 title?.toLowerCase().includes('technology')
+    // Enhanced keyword matching for more accurate role detection
+    const titleLower = title?.toLowerCase() || ''
 
-    const isProvider = title?.toLowerCase().includes('provider') ||
-                      title?.toLowerCase().includes('ambulatory') ||
-                      title?.toLowerCase().includes('physician')
+    // IT keywords - expanded list
+    const itKeywords = ['it', 'information technology', 'technology', 'applications',
+                        'systems', 'cio', 'cto', 'tech', 'digital', 'informatics',
+                        'director of applications', 'information systems', 'data']
 
-    const targetApproach = isProvider ? 'Provider' : (isIT ? 'IT' : 'HIM')
+    // HIM keywords - health information management
+    const himKeywords = ['him', 'health information', 'medical records', 'privacy',
+                         'compliance', 'coding', 'documentation', 'records',
+                         'information management', 'hipaa']
+
+    // Provider keywords - clinical roles
+    const providerKeywords = ['provider', 'physician', 'doctor', 'md', 'clinical',
+                              'ambulatory', 'practice manager', 'medical director',
+                              'clinic', 'practice', 'care']
+
+    // Check for matches
+    const isIT = itKeywords.some(keyword => titleLower.includes(keyword))
+    const isHIM = himKeywords.some(keyword => titleLower.includes(keyword))
+    const isProvider = providerKeywords.some(keyword => titleLower.includes(keyword))
+
+    // Determine target approach (Provider and IT take precedence over HIM)
+    let targetApproach = 'HIM' // Default
+    if (isProvider) targetApproach = 'Provider'
+    else if (isIT) targetApproach = 'IT'
+    else if (isHIM) targetApproach = 'HIM'
 
     // Try to find exact approach match
     const approachMatch = candidates.find(s => s.approach === targetApproach)

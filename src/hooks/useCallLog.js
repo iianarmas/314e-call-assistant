@@ -24,6 +24,8 @@ export function useCallLog() {
           opening_script_id: callData.openingScriptId || null,
           closing_script_id: callData.closingScriptId || null,
           objection_responses: callData.objectionResponses || null,
+          ai_generated: callData.aiGenerated || false,
+          regeneration_count: callData.regenerationCount || 0,
           created_at: new Date().toISOString()
         }])
         .select()

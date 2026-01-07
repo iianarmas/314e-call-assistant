@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCustomObjections } from '../hooks/useCustomObjections'
 import ObjectionTable from '../components/ObjectionTable'
 import AddObjectionModal from '../components/AddObjectionModal'
@@ -18,6 +18,14 @@ export default function ObjectionsPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingObjection, setEditingObjection] = useState(null)
+
+  // Clear file scripts cache when component unmounts (user navigates away)
+  // This ensures objection library is rebuilt with latest data
+  useEffect(() => {
+    return () => {
+      sessionStorage.removeItem('file_scripts')
+    }
+  }, [])
 
   const handleEdit = (objection) => {
     setEditingObjection(objection)

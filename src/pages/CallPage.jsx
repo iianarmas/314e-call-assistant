@@ -22,6 +22,7 @@ export default function CallPage() {
   const [currentScript, setCurrentScript] = useState('')
   const [loadingContact, setLoadingContact] = useState(true)
   const [loadingScripts, setLoadingScripts] = useState(true)
+  const [callStarted, setCallStarted] = useState(false)
 
   const { generating, generateOpeningScript, generateObjectionResponse, generateClosingScript } = useScriptGeneration()
   const { sessionData, updateQualificationData, updateNotes, logObjection, setOutcome } = useCallSession(contactId)
@@ -66,12 +67,10 @@ export default function CallPage() {
     initScripts()
   }, [])
 
-  // Generate opening script when contact and scripts are loaded
-  useEffect(() => {
-    if (contact && scripts && !currentScript) {
-      handleGenerateOpening()
-    }
-  }, [contact, scripts])
+  const handleStartCall = async () => {
+    setCallStarted(true)
+    handleGenerateOpening()
+  }
 
   const handleGenerateOpening = async () => {
     const baseScript = selectBaseScript(contact, scripts)
@@ -169,94 +168,117 @@ export default function CallPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Call Interface</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Real-time assistance for your call
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/')}
-            className="text-gray-600 hover:text-gray-900 font-medium"
-          >
-            ← Back to Contacts
-          </button>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Call Interface</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Real-time assistance for your call
+          </p>
         </div>
 
-        {/* Main layout: Script (left) + Data Entry (right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left: Script Display + Objection Handler + Closing */}
-          <div className="space-y-4">
-            <ScriptDisplay
-              contact={contact}
-              script={currentScript}
-              loading={generating}
-            />
-
-            {/* Objection Handler */}
-            <ObjectionHandler
-              product={contact.product}
-              contact={contact}
-              objectionLibrary={objectionLibrary}
-              onGenerateResponse={handleObjectionResponse}
-              generating={generating}
-            />
-
-            {/* Closing buttons */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Close Call</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleCloseCall('discovery')}
-                  disabled={generating}
-                  className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Schedule Discovery Call
-                </button>
-
-                {contact.product === 'Dexit' && sessionData.qualificationData?.isDemoEligible && (
-                  <button
-                    onClick={() => handleCloseCall('demo')}
-                    disabled={generating}
-                    className="w-full bg-green-600 text-white px-4 py-2.5 rounded-md font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Schedule Demo ⭐
-                  </button>
-                )}
-
-                <button
-                  onClick={handleEndCall}
-                  className="w-full bg-gray-600 text-white px-4 py-2.5 rounded-md font-medium hover:bg-gray-700 transition-colors"
-                >
-                  End Call & Save
-                </button>
+        {!callStarted ? (
+          /* Start Call Screen */
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  {contact.name}
+                </h2>
+                <p className="text-gray-600">{contact.company}</p>
+                <p className="text-sm text-gray-500 mt-1">{contact.title}</p>
+                <div className="mt-3">
+                  <span className={`inline-flex px-3 py-1 text-sm font-medium rounded ${
+                    contact.product === 'Dexit'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-purple-100 text-purple-800'
+                  }`}>
+                    {contact.product}
+                  </span>
+                </div>
               </div>
+              <button
+                onClick={handleStartCall}
+                disabled={generating}
+                className="px-8 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
+              >
+                Start Call
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Main layout: Script (left) + Data Entry (right) */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left: Script Display + Objection Handler + Closing */}
+            <div className="space-y-4">
+              <ScriptDisplay
+                contact={contact}
+                script={currentScript}
+                loading={generating}
+              />
 
-              {contact.product === 'Dexit' && sessionData.qualificationData?.completedItems > 0 && (
-                <p className="mt-3 text-sm text-gray-600">
-                  {sessionData.qualificationData.isDemoEligible
-                    ? '✓ Demo eligible! You can offer a product demo.'
-                    : `Collect ${4 - (sessionData.qualificationData.completedItems || 0)} more items to offer a demo.`}
-                </p>
+              {/* Objection Handler */}
+              <ObjectionHandler
+                product={contact.product}
+                contact={contact}
+                objectionLibrary={objectionLibrary}
+                onGenerateResponse={handleObjectionResponse}
+                generating={generating}
+              />
+
+              {/* Closing buttons */}
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <h3 className="font-semibold text-gray-900 mb-3">Close Call</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleCloseCall('discovery')}
+                    disabled={generating}
+                    className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Schedule Discovery Call
+                  </button>
+
+                  {contact.product === 'Dexit' && sessionData.qualificationData?.isDemoEligible && (
+                    <button
+                      onClick={() => handleCloseCall('demo')}
+                      disabled={generating}
+                      className="w-full bg-green-600 text-white px-4 py-2.5 rounded-md font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Schedule Demo ⭐
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleEndCall}
+                    className="w-full bg-gray-600 text-white px-4 py-2.5 rounded-md font-medium hover:bg-gray-700 transition-colors"
+                  >
+                    End Call & Save
+                  </button>
+                </div>
+
+                {contact.product === 'Dexit' && sessionData.qualificationData?.completedItems > 0 && (
+                  <p className="mt-3 text-sm text-gray-600">
+                    {sessionData.qualificationData.isDemoEligible
+                      ? '✓ Demo eligible! You can offer a product demo.'
+                      : `Collect ${4 - (sessionData.qualificationData.completedItems || 0)} more items to offer a demo.`}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Data Entry */}
+            <div>
+              {contact.product === 'Dexit' ? (
+                <QualificationTracker
+                  onDataChange={updateQualificationData}
+                />
+              ) : (
+                <NotesPanel
+                  contact={contact}
+                  onDataChange={updateNotes}
+                />
               )}
             </div>
           </div>
-
-          {/* Right: Data Entry */}
-          <div>
-            {contact.product === 'Dexit' ? (
-              <QualificationTracker
-                onDataChange={updateQualificationData}
-              />
-            ) : (
-              <NotesPanel
-                contact={contact}
-                onDataChange={updateNotes}
-              />
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useContacts } from '../hooks/useContacts'
-import ContactList from '../components/ContactList'
+import ContactTable from '../components/ContactTable'
 import AddContactModal from '../components/AddContactModal'
 import EditContactModal from '../components/EditContactModal'
 import BulkUploadModal from '../components/BulkUploadModal'
+import CallHistoryModal from '../components/CallHistoryModal'
 
 export default function ContactsPage() {
   const {
@@ -19,7 +20,9 @@ export default function ContactsPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [editingContact, setEditingContact] = useState(null)
+  const [selectedContact, setSelectedContact] = useState(null)
 
   const handleEdit = (contact) => {
     setEditingContact(contact)
@@ -33,6 +36,11 @@ export default function ContactsPage() {
         alert(`Error deleting contact: ${result.error}`)
       }
     }
+  }
+
+  const handleViewHistory = (contact) => {
+    setSelectedContact(contact)
+    setShowHistoryModal(true)
   }
 
   if (loading) {
@@ -58,62 +66,76 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
-          <p className="mt-2 text-gray-600">
-            Manage your Dexit and Muspell prospect contacts
-          </p>
-        </div>
+    <div className="h-screen bg-gray-50 flex flex-col">
+      {/* Header - Fixed */}
+      <div className="flex-none px-4 py-4 bg-gray-50">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Manage your Dexit and Muspell prospect contacts
+            </p>
+          </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors"
-          >
-            + Add Contact
-          </button>
-          <button
-            onClick={() => setShowBulkUploadModal(true)}
-            className="bg-white text-gray-700 px-4 py-2 rounded-md font-medium border border-gray-300 hover:bg-gray-50 transition-colors"
-          >
-            Import CSV
-          </button>
+          {/* Action buttons - Right aligned */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors"
+            >
+              + Add Contact
+            </button>
+            <button
+              onClick={() => setShowBulkUploadModal(true)}
+              className="bg-white text-gray-700 px-4 py-2 rounded-md font-medium border border-gray-300 hover:bg-gray-50 transition-colors"
+            >
+              Import CSV
+            </button>
+          </div>
         </div>
+      </div>
 
-        {/* Contact list */}
-        <ContactList
+      {/* Contact table - takes remaining space */}
+      <div className="flex-1 overflow-hidden px-4 pb-4">
+        <ContactTable
           contacts={contacts}
           onEdit={handleEdit}
           onDelete={handleDelete}
-        />
-
-        {/* Modals */}
-        <AddContactModal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onAdd={addContact}
-        />
-
-        <EditContactModal
-          isOpen={showEditModal}
-          onClose={() => {
-            setShowEditModal(false)
-            setEditingContact(null)
-          }}
-          onUpdate={updateContact}
-          contact={editingContact}
-        />
-
-        <BulkUploadModal
-          isOpen={showBulkUploadModal}
-          onClose={() => setShowBulkUploadModal(false)}
-          onBulkImport={bulkImportContacts}
+          onViewHistory={handleViewHistory}
         />
       </div>
+
+      {/* Modals */}
+      <AddContactModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onAdd={addContact}
+      />
+
+      <EditContactModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setEditingContact(null)
+        }}
+        onUpdate={updateContact}
+        contact={editingContact}
+      />
+
+      <BulkUploadModal
+        isOpen={showBulkUploadModal}
+        onClose={() => setShowBulkUploadModal(false)}
+        onBulkImport={bulkImportContacts}
+      />
+
+      <CallHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => {
+          setShowHistoryModal(false)
+          setSelectedContact(null)
+        }}
+        contact={selectedContact}
+      />
     </div>
   )
 }

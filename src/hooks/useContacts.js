@@ -6,20 +6,52 @@ export function useContacts() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Fetch all contacts
+  // Fetch all contacts with call stats
   const fetchContacts = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const { data, error: fetchError } = await supabase
+      // Fetch contacts
+      const { data: contactsData, error: fetchError } = await supabase
         .from('contacts')
         .select('*')
         .order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError
 
-      setContacts(data || [])
+      // Fetch call counts and last call dates for each contact
+      const { data: callStats, error: statsError } = await supabase
+        .from('call_logs')
+        .select('contact_id, created_at')
+
+      if (statsError) throw statsError
+
+      // Aggregate call stats
+      const statsMap = {}
+      if (callStats) {
+        callStats.forEach(log => {
+          if (!statsMap[log.contact_id]) {
+            statsMap[log.contact_id] = {
+              count: 0,
+              lastCall: log.created_at
+            }
+          }
+          statsMap[log.contact_id].count++
+          if (new Date(log.created_at) > new Date(statsMap[log.contact_id].lastCall)) {
+            statsMap[log.contact_id].lastCall = log.created_at
+          }
+        })
+      }
+
+      // Merge stats with contacts
+      const contactsWithStats = (contactsData || []).map(contact => ({
+        ...contact,
+        call_count: statsMap[contact.id]?.count || 0,
+        last_call_date: statsMap[contact.id]?.lastCall || null
+      }))
+
+      setContacts(contactsWithStats)
     } catch (err) {
       console.error('Error fetching contacts:', err)
       setError(err.message)

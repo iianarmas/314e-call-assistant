@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Call Flow Parser Test</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #007bff;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      color: #007bff;
+      margin-top: 0;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    pre {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 15px;
+      overflow-x: auto;
+      font-size: 14px;
+    }
+    .success {
+      color: #28a745;
+      font-weight: bold;
+    }
+    .error {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    .result {
+      margin-top: 15px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin: 15px 0;
+    }
+    .stat-card {
+      background: #e7f3ff;
+      padding: 15px;
+      border-radius: 5px;
+      border-left: 4px solid #007bff;
+    }
+    .stat-card h3 {
+      margin: 0 0 5px 0;
+      color: #007bff;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+    .stat-card p {
+      margin: 0;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Call Flow Parser Test Suite</h1>
+
+  <div class="test-section">
+    <h2>Test 1: Parse Sample Markdown</h2>
+    <p>Tests the parser with inline sample markdown content.</p>
+    <button onclick="runTest1()">Run Test 1</button>
+    <div id="test1-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Load All Call Flow Files</h2>
+    <p>Tests loading all three call flow markdown files from the docs folder.</p>
+    <button onclick="runTest2()">Run Test 2</button>
+    <div id="test2-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: Section Navigation Simulation</h2>
+    <p>Simulates navigating through different sections of a call flow.</p>
+    <button onclick="runTest3()">Run Test 3</button>
+    <div id="test3-result" class="result"></div>
+  </div>
+
+  <script type="module">
+    import { parseCallFlow, loadAllCallFlows } from './src/utils/callFlowParser.js'
+
+    // Sample markdown for testing
+    const sampleMarkdown = `HIM Manager/Director Call Flow
+OPENING (Conversational & Clear)
+Version 1 (Direct):
+"Hi [First Name], this is [Your Name] from 314e. We work with healthcare organizations to help them process patient documents faster using AI. I'm calling HIM leaders like yourself because you're the ones who know exactly how time-consuming document processing can be."
+
+Version 2 (Question-led):
+"Hi [First Name], [Your Name] from 314e. Quick question - when a patient document comes in, whether it's a fax, scan, or upload, how much of that process is your team doing manually versus having the system do it automatically?"
+
+DISCOVERY QUESTIONS (Natural Flow)
+"What EHR are you using?"
+
+Why: Shows you understand their environment
+
+"How are documents coming into your department - mostly faxes, scans, both?"
+
+Why: Identifies intake channels
+
+"When a document arrives, what happens next? Walk me through it."
+
+TRANSITION TO PITCH
+If they have manual processes:
+"Got it. So it sounds like your team is spending a lot of time on tasks that could actually be handled automatically. That's exactly what we help with."
+
+If they mention high volume:
+"Wow, [X] documents a day with a team of [Y]? That's a lot. What we do is take those repetitive tasks off your team's plate."
+
+OBJECTION HANDLING
+"I'm not the decision maker"
+Response:
+"I totally understand - these decisions usually involve a few people. But here's why I wanted to talk to you specifically: you're the one in the trenches every day, right?"
+
+Alternative:
+"That's fine - who else would typically be involved in a decision like this? IT? Your director?"
+
+"We're all set / We're good"
+Response:
+"That's great to hear! Can I ask - what are you using now to handle your document processing?"
+
+CLOSING
+"Awesome. Let me grab a couple of times from you. What does [this week/next week] look like?"`
+
+    let cachedCallFlows = null
+
+    // Test 1: Parse sample markdown
+    window.runTest1 = function() {
+      const resultDiv = document.getElementById('test1-result')
+      resultDiv.innerHTML = '<p>Running test...</p>'
+
+      try {
+        const result = parseCallFlow(sampleMarkdown, 'dexit-him-callflow-v1.md')
+
+        let html = '<div class="success">✓ Test Passed</div>'
+        html += '<div class="stats">'
+        html += `<div class="stat-card"><h3>Opening Versions</h3><p>${result.sections.opening.versions.length}</p></div>`
+        html += `<div class="stat-card"><h3>Discovery Questions</h3><p>${result.sections.discovery.length}</p></div>`
+        html += `<div class="stat-card"><h3>Transitions</h3><p>${result.sections.transition.length}</p></div>`
+        html += `<div class="stat-card"><h3>Objections</h3><p>${result.sections.objections.length}</p></div>`
+        html += `<div class="stat-card"><h3>Closing Versions</h3><p>${result.sections.closing.versions.length}</p></div>`
+        html += '</div>'
+
+        html += '<h3>Call Flow Details:</h3>'
+        html += `<p><strong>Name:</strong> ${result.name}</p>`
+        html += `<p><strong>Product:</strong> ${result.product}</p>`
+        html += `<p><strong>Approach:</strong> ${result.approach}</p>`
+
+        html += '<h4>Sample Opening (Version 1):</h4>'
+        html += `<pre>${result.sections.opening.versions[0]?.content || 'N/A'}</pre>`
+
+        html += '<h4>Sample Discovery Question:</h4>'
+        html += `<pre>Q: ${result.sections.discovery[0]?.question || 'N/A'}\nWhy: ${result.sections.discovery[0]?.why || 'N/A'}</pre>`
+
+        html += '<details><summary>View Full JSON Output</summary>'
+        html += `<pre>${JSON.stringify(result, null, 2)}</pre>`
+        html += '</details>'
+
+        resultDiv.innerHTML = html
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="error">✗ Test Failed</div><pre>${error.message}\n${error.stack}</pre>`
+      }
+    }
+
+    // Test 2: Load all call flows
+    window.runTest2 = async function() {
+      const resultDiv = document.getElementById('test2-result')
+      resultDiv.innerHTML = '<p>Loading call flows...</p>'
+
+      try {
+        const callFlows = await loadAllCallFlows()
+        cachedCallFlows = callFlows
+
+        if (callFlows.length === 0) {
+          throw new Error('No call flows loaded')
+        }
+
+        let html = `<div class="success">✓ Test Passed - Loaded ${callFlows.length} call flows</div>`
+
+        callFlows.forEach((flow, i) => {
+          html += `<div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">`
+          html += `<h3>${i + 1}. ${flow.name}</h3>`
+          html += '<div class="stats">'
+          html += `<div class="stat-card"><h3>Opening</h3><p>${flow.sections.opening.versions.length}</p></div>`
+          html += `<div class="stat-card"><h3>Discovery</h3><p>${flow.sections.discovery.length}</p></div>`
+          html += `<div class="stat-card"><h3>Transitions</h3><p>${flow.sections.transition.length}</p></div>`
+          html += `<div class="stat-card"><h3>Objections</h3><p>${flow.sections.objections.length}</p></div>`
+          html += `<div class="stat-card"><h3>Closing</h3><p>${flow.sections.closing.versions.length}</p></div>`
+          html += '</div>'
+          html += '</div>'
+        })
+
+        resultDiv.innerHTML = html
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="error">✗ Test Failed</div><pre>${error.message}\n${error.stack}</pre>`
+      }
+    }
+
+    // Test 3: Section navigation
+    window.runTest3 = function() {
+      const resultDiv = document.getElementById('test3-result')
+
+      if (!cachedCallFlows || cachedCallFlows.length === 0) {
+        resultDiv.innerHTML = '<div class="error">Please run Test 2 first to load call flows</div>'
+        return
+      }
+
+      const callFlow = cachedCallFlows[0] // Use first call flow
+
+      let html = '<div class="success">✓ Test Passed</div>'
+      html += `<h3>Simulating Navigation Through: ${callFlow.name}</h3>`
+
+      const sections = [
+        { name: 'opening', label: 'Opening Scripts' },
+        { name: 'discovery', label: 'Discovery Questions' },
+        { name: 'transition', label: 'Transition Pitches' },
+        { name: 'objections', label: 'Objection Handling' },
+        { name: 'closing', label: 'Closing Scripts' }
+      ]
+
+      sections.forEach(({ name, label }) => {
+        html += `<div style="margin-top: 15px; padding: 15px; background: #e7f3ff; border-radius: 5px;">`
+        html += `<h4>📍 ${label}</h4>`
+
+        const section = callFlow.sections[name]
+
+        if (name === 'opening' || name === 'closing') {
+          html += `<p><strong>${section.versions.length} versions available:</strong></p>`
+          html += '<ul>'
+          section.versions.forEach(v => {
+            html += `<li>${v.label}: <em>${v.content.substring(0, 100)}...</em></li>`
+          })
+          html += '</ul>'
+        } else if (Array.isArray(section)) {
+          html += `<p><strong>${section.length} items available</strong></p>`
+          html += '<ul>'
+          section.slice(0, 3).forEach((item, i) => {
+            if (name === 'discovery') {
+              html += `<li>${item.question}</li>`
+            } else if (name === 'transition') {
+              html += `<li>Trigger: ${item.trigger}</li>`
+            } else if (name === 'objections') {
+              html += `<li>${item.objection}</li>`
+            }
+          })
+          if (section.length > 3) {
+            html += `<li><em>... and ${section.length - 3} more</em></li>`
+          }
+          html += '</ul>'
+        }
+
+        html += '</div>'
+      })
+
+      resultDiv.innerHTML = html
+    }
+
+    // Auto-run test 1 on load
+    window.addEventListener('load', () => {
+      console.log('Page loaded - ready for testing')
+    })
+  </script>
+</body>
+</html>

@@ -2,8 +2,9 @@ import { useState } from 'react'
 
 export default function AddContactModal({ isOpen, onClose, onAdd }) {
   const [formData, setFormData] = useState({
-    name: '',
-    company: '',
+    first_name: '',
+    last_name: '',
+    organization: '',
     title: '',
     product: 'Dexit',
     trigger_type: '',
@@ -24,8 +25,9 @@ export default function AddContactModal({ isOpen, onClose, onAdd }) {
 
     // Prepare data (remove empty strings)
     const contactData = {
-      name: formData.name.trim(),
-      company: formData.company.trim(),
+      first_name: formData.first_name.trim(),
+      last_name: formData.last_name.trim(),
+      organization: formData.organization.trim(),
       title: formData.title.trim() || null,
       product: formData.product,
       trigger_type: formData.trigger_type.trim() || null,
@@ -40,8 +42,9 @@ export default function AddContactModal({ isOpen, onClose, onAdd }) {
     if (result.success) {
       // Reset form
       setFormData({
-        name: '',
-        company: '',
+        first_name: '',
+        last_name: '',
+        organization: '',
         title: '',
         product: 'Dexit',
         trigger_type: '',
@@ -75,31 +78,47 @@ export default function AddContactModal({ isOpen, onClose, onAdd }) {
 
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
-              {/* Name */}
+              {/* First Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name *
+                  First Name *
                 </label>
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
+                  name="first_name"
+                  value={formData.first_name}
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="John Smith"
+                  placeholder="John"
                 />
               </div>
 
-              {/* Company */}
+              {/* Last Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Company *
+                  Last Name *
                 </label>
                 <input
                   type="text"
-                  name="company"
-                  value={formData.company}
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Smith"
+                />
+              </div>
+
+              {/* Organization */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Organization *
+                </label>
+                <input
+                  type="text"
+                  name="organization"
+                  value={formData.organization}
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

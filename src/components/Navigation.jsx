@@ -61,6 +61,16 @@ export default function Navigation() {
             >
               Objections
             </button>
+            <button
+              onClick={() => navigate('/settings')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive('/settings')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Settings
+            </button>
           </div>
         </div>
       </div>

@@ -3,34 +3,41 @@ import { useState } from 'react'
 export default function AddScriptModal({ isOpen, onClose, onAdd }) {
   const [formData, setFormData] = useState({
     name: '',
-    script_type: 'opening',
+    section_type: 'opening', // opening, discovery, transition, objections, closing
     product: 'Dexit',
-    approach: '',
+    approach: 'HIM', // Default approach - REQUIRED
     trigger_type: '',
-    content: ''
+    variations: [{ label: 'Version 1', content: '' }]
   })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
     // Validation
-    if (!formData.name.trim() || !formData.content.trim()) {
-      alert('Please fill in all required fields')
+    if (!formData.name.trim()) {
+      alert('Please enter a script name')
       return
     }
 
-    // Prepare data based on product and type
+    // Check if at least one variation has content
+    const hasContent = formData.variations.some(v => v.content.trim())
+    if (!hasContent) {
+      alert('Please add at least one variation with content')
+      return
+    }
+
+    // Prepare data based on section type
     const scriptData = {
       name: formData.name.trim(),
-      script_type: formData.script_type,
+      script_type: formData.section_type, // Keep for backward compatibility
+      section_type: formData.section_type,
       product: formData.product,
-      content: formData.content.trim(),
       is_active: true,
       version: 1
     }
 
-    // Add approach for Dexit opening scripts
-    if (formData.product === 'Dexit' && formData.script_type === 'opening' && formData.approach) {
+    // ALWAYS add approach for Dexit (required for call flow matching)
+    if (formData.product === 'Dexit' && formData.approach) {
       scriptData.approach = formData.approach
     }
 
@@ -39,17 +46,23 @@ export default function AddScriptModal({ isOpen, onClose, onAdd }) {
       scriptData.trigger_type = formData.trigger_type
     }
 
+    // Store variations in content as JSON (or we could create multiple scripts)
+    const validVariations = formData.variations.filter(v => v.content.trim())
+
+    // For now, create one script with all variations in structured format
+    scriptData.content = formatVariations(validVariations, formData.section_type)
+
     const result = await onAdd(scriptData)
 
     if (result.success) {
       // Reset form
       setFormData({
         name: '',
-        script_type: 'opening',
+        section_type: 'opening',
         product: 'Dexit',
-        approach: '',
+        approach: 'HIM',
         trigger_type: '',
-        content: ''
+        variations: [{ label: 'Version 1', content: '' }]
       })
       onClose()
     } else {
@@ -57,125 +70,239 @@ export default function AddScriptModal({ isOpen, onClose, onAdd }) {
     }
   }
 
+  const formatVariations = (variations, sectionType) => {
+    if (sectionType === 'opening' || sectionType === 'closing') {
+      // Format as markdown with versions
+      return variations.map((v, i) => {
+        return `## Version ${i + 1}: ${v.label}\n${v.content}`
+      }).join('\n\n---\n\n')
+    } else if (sectionType === 'objections') {
+      // Format as objection with response and alternatives
+      const [primary, ...alternatives] = variations
+      let formatted = `## ${formData.name}\n**Response:**\n${primary.content}`
+
+      if (alternatives.length > 0) {
+        alternatives.forEach((alt, i) => {
+          formatted += `\n\n**Alternative ${i + 1}:**\n${alt.content}`
+        })
+      }
+      return formatted
+    } else {
+      // For discovery and transition, just use first variation
+      return variations[0].content
+    }
+  }
+
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  const addVariation = () => {
+    setFormData(prev => ({
+      ...prev,
+      variations: [
+        ...prev.variations,
+        {
+          label: `Version ${prev.variations.length + 1}`,
+          content: ''
+        }
+      ]
+    }))
+  }
+
+  const removeVariation = (index) => {
+    if (formData.variations.length === 1) {
+      alert('You must have at least one variation')
+      return
+    }
+    setFormData(prev => ({
+      ...prev,
+      variations: prev.variations.filter((_, i) => i !== index)
+    }))
+  }
+
+  const updateVariation = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      variations: prev.variations.map((v, i) =>
+        i === index ? { ...v, [field]: value } : v
+      )
+    }))
+  }
+
   if (!isOpen) return null
+
+  const showVariations = ['opening', 'closing', 'objections'].includes(formData.section_type)
+  const variationLabel = formData.section_type === 'objections' ? 'Response' : 'Variation'
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Script</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Script Name *
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="e.g., Dexit IT Opening - Default"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Name */}
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Script Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleChange('name', e.target.value)}
+                  placeholder="e.g., Dexit IT Opening, Cost Objection, Discovery Questions"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Tip: Use {'{{'} contact.first_name {'}}'} for dynamic names (see format guide)
+                </p>
+              </div>
 
-            {/* Product */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Product *
-              </label>
-              <select
-                value={formData.product}
-                onChange={(e) => handleChange('product', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="Dexit">Dexit</option>
-                <option value="Muspell">Muspell</option>
-              </select>
-            </div>
-
-            {/* Script Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Script Type *
-              </label>
-              <select
-                value={formData.script_type}
-                onChange={(e) => handleChange('script_type', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="opening">Opening</option>
-                <option value="objection">Objection</option>
-                <option value="closing">Closing</option>
-              </select>
-            </div>
-
-            {/* Approach (for Dexit opening scripts) */}
-            {formData.product === 'Dexit' && formData.script_type === 'opening' && (
+              {/* Product */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Approach
+                  Product *
                 </label>
                 <select
-                  value={formData.approach}
-                  onChange={(e) => handleChange('approach', e.target.value)}
+                  value={formData.product}
+                  onChange={(e) => handleChange('product', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">None / General</option>
-                  <option value="IT">IT</option>
-                  <option value="HIM">HIM</option>
-                  <option value="Provider">Provider</option>
+                  <option value="Dexit">Dexit</option>
+                  <option value="Muspell">Muspell</option>
                 </select>
               </div>
-            )}
 
-            {/* Trigger Type (for Muspell) */}
-            {formData.product === 'Muspell' && (
+              {/* Section Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Trigger Type
+                  Section Type *
                 </label>
                 <select
-                  value={formData.trigger_type}
-                  onChange={(e) => handleChange('trigger_type', e.target.value)}
+                  value={formData.section_type}
+                  onChange={(e) => handleChange('section_type', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">None / General</option>
-                  <option value="Migration">Migration</option>
-                  <option value="Merger">Merger</option>
-                  <option value="Acquisition">Acquisition</option>
-                  <option value="Upgrade">Upgrade</option>
-                  <option value="Other">Other</option>
+                  <option value="opening">Opening</option>
+                  <option value="discovery">Discovery Questions</option>
+                  <option value="transition">Transition to Pitch</option>
+                  <option value="objections">Objection Handling</option>
+                  <option value="closing">Closing</option>
                 </select>
               </div>
-            )}
 
-            {/* Content */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Script Content *
-              </label>
-              <textarea
-                value={formData.content}
-                onChange={(e) => handleChange('content', e.target.value)}
-                placeholder="Enter the script content here..."
-                rows={12}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                You can use placeholders like {'{contact.name}'}, {'{contact.company}'}, etc.
-              </p>
+              {/* Call Flow / Approach (REQUIRED for Dexit) */}
+              {formData.product === 'Dexit' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Call Flow / Approach *
+                  </label>
+                  <select
+                    value={formData.approach}
+                    onChange={(e) => handleChange('approach', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="HIM">HIM</option>
+                    <option value="IT">IT</option>
+                    <option value="Ambulatory">Ambulatory</option>
+                    <option value="Revenue Cycle">Revenue Cycle</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This determines which call flow this script will appear in
+                  </p>
+                </div>
+              )}
+
+              {/* Trigger Type (for Muspell) */}
+              {formData.product === 'Muspell' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Trigger Type
+                  </label>
+                  <select
+                    value={formData.trigger_type}
+                    onChange={(e) => handleChange('trigger_type', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">None / General</option>
+                    <option value="Migration">Migration</option>
+                    <option value="Merger">Merger</option>
+                    <option value="Acquisition">Acquisition</option>
+                    <option value="Upgrade">Upgrade</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Variations Section */}
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-700">
+                  {showVariations ? `${variationLabel}s` : 'Content'}
+                </h3>
+                {showVariations && (
+                  <button
+                    type="button"
+                    onClick={addVariation}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    + Add {variationLabel}
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {formData.variations.map((variation, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-2">
+                      {showVariations ? (
+                        <input
+                          type="text"
+                          value={variation.label}
+                          onChange={(e) => updateVariation(index, 'label', e.target.value)}
+                          placeholder={`${variationLabel} ${index + 1} label`}
+                          className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
+                        />
+                      ) : (
+                        <span className="text-sm font-medium text-gray-700">Content</span>
+                      )}
+                      {showVariations && formData.variations.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeVariation(index)}
+                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <textarea
+                      value={variation.content}
+                      onChange={(e) => updateVariation(index, 'content', e.target.value)}
+                      placeholder={`Enter ${showVariations ? variationLabel.toLowerCase() : 'content'} here...`}
+                      rows={formData.section_type === 'objections' ? 6 : 8}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-xs text-blue-800">
+                  <strong>💡 Tip:</strong> Use variables like {'{{'} contact.first_name {'}}'}, {'{{'} contact.organization {'}}'}, {'{{'} rep.name {'}}'}, {'{{'} product.name {'}}'} for dynamic content.
+                  <br />
+                  See the <a href="/CALLFLOW_FORMAT_GUIDE.md" target="_blank" className="underline">Format Guide</a> for all available variables.
+                </p>
+              </div>
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
               <button
                 type="submit"
                 className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors"

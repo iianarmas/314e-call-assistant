@@ -1,9 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import DashboardPage from './pages/DashboardPage'
 import ContactsPage from './pages/ContactsPage'
-import CallPage from './pages/CallPage'
+import CallPage from './pages/CallPageWithFlowNavigator'
 import ScriptsPage from './pages/ScriptsPage'
 import ObjectionsPage from './pages/ObjectionsPage'
+import SettingsPage from './pages/SettingsPage'
 import Navigation from './components/Navigation'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="/contacts" element={<ContactsPage />} />
         <Route path="/scripts" element={<ScriptsPage />} />
         <Route path="/objections" element={<ObjectionsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/call/:contactId" element={<CallPage />} />
       </Routes>
     </Router>

@@ -14,32 +14,67 @@ export function replaceScriptVariables(content, context = {}) {
   if (!content) return content
 
   const {
+    company = {},
     contact = {},
     rep = {},
     product = {},
     scriptContext = {},
+    ehr = '',
+    dms = '',
+    trigger = '',
   } = context
 
   // Build replacement map
   const replacements = {
-    // Contact information
+    // Company information
+    'company_name': company.name || '[Company Name]',
+    'company_industry': company.industry || '[Industry]',
+    'company_size': company.size || '[Size]',
+    'company.name': company.name || '[Company Name]',
+    'company.industry': company.industry || '[Industry]',
+    'company.size': company.size || '[Size]',
+
+    // Systems information
+    'ehr_system': company.ehr_system || ehr || '[EHR System]',
+    'dms_system': company.dms_system || dms || '[DMS System]',
+    'company.ehr_system': company.ehr_system || ehr || '[EHR System]',
+    'company.dms_system': company.dms_system || dms || '[DMS System]',
+
+    // Trigger information (Muspell)
+    'trigger_type': company.trigger_type || trigger || '[Trigger Type]',
+    'trigger_details': company.trigger_details || '[Trigger Details]',
+    'trigger_timeline': company.trigger_timeline || '[Timeline]',
+    'company.trigger_type': company.trigger_type || trigger || '[Trigger Type]',
+    'company.trigger_details': company.trigger_details || '[Trigger Details]',
+    'company.trigger_timeline': company.trigger_timeline || '[Timeline]',
+
+    // Contact information (session only - not from database)
+    'contact_name': contact.name || '[Contact Name]',
+    'contact_title': contact.title || '[Title]',
+    'contact_first_name': contact.first_name || contact.name?.split(' ')[0] || '[First Name]',
+    'contact_last_name': contact.last_name || contact.name?.split(' ').slice(1).join(' ') || '[Last Name]',
+    'contact.name': contact.name || '[Contact Name]',
     'contact.first_name': contact.first_name || contact.name?.split(' ')[0] || '[First Name]',
     'contact.last_name': contact.last_name || contact.name?.split(' ').slice(1).join(' ') || '[Last Name]',
     'contact.full_name': getFullName(contact),
     'contact.title': contact.title || '[Title]',
-    'contact.organization': contact.organization || contact.company || '[Organization]',
+    'contact.organization': company.name || '[Organization]',
 
     // Sales rep information (from settings or defaults)
-    'rep.name': rep.name || 'Sarah Johnson', // Default rep name
+    'rep_name': rep.name || 'Sarah Johnson',
+    'rep_first_name': rep.first_name || rep.name?.split(' ')[0] || 'Sarah',
+    'rep_company': rep.company || 'Dexit Solutions',
+    'rep.name': rep.name || 'Sarah Johnson',
     'rep.first_name': rep.first_name || rep.name?.split(' ')[0] || 'Sarah',
     'rep.company': rep.company || 'Dexit Solutions',
 
     // Product information
-    'product.name': product.name || contact.product || 'Dexit',
+    'product_name': product.name || '[Product]',
+    'product.name': product.name || '[Product]',
 
-    // Technical context (parsed from notes)
-    'context.ehr': scriptContext.ehr || '[EHR System]',
-    'context.dms': scriptContext.dms || '[DMS System]',
+    // Technical context (parsed from notes or company data)
+    'context.ehr': company.ehr_system || ehr || scriptContext.ehr || '[EHR System]',
+    'context.dms': company.dms_system || dms || scriptContext.dms || '[DMS System]',
     'context.volume': scriptContext.volume || '[Volume]',
   }
 
@@ -161,28 +196,34 @@ export function saveRepSettings(settings) {
 
 /**
  * Build complete replacement context
- * Combines contact, rep settings, and parsed notes
+ * Combines company, contact (session), rep settings, and parsed notes
  */
-export function buildReplacementContext(contact, notes = '') {
+export function buildReplacementContext(company, contact, notes = '', product = 'Dexit') {
   const rep = getRepSettings()
   const scriptContext = parseNotesContext(notes)
 
   return {
-    contact,
+    company: company || {},
+    contact: contact || {},
     rep,
     product: {
-      name: contact?.product || 'Dexit'
+      name: product || 'Dexit'
     },
+    ehr: company?.ehr_system || scriptContext.ehr || '',
+    dms: company?.dms_system || scriptContext.dms || '',
+    trigger: company?.trigger_type || '',
     scriptContext
   }
 }
 
 /**
- * Example usage:
+ * Example usage (updated for company-first architecture):
  *
- * const script = "Hi {{contact.first_name}}, this is {{rep.name}} from {{rep.company}}."
- * const context = buildReplacementContext(contact, notes)
+ * const script = "Hi {{contact_first_name}}, this is {{rep_name}} from {{rep_company}}. " +
+ *                "I know {{company_name}} uses {{ehr_system}} for their EHR."
+ * const context = buildReplacementContext(company, contact, notes, product)
  * const personalized = replaceScriptVariables(script, context)
  *
- * // Result: "Hi John, this is Sarah Johnson from Dexit Solutions."
+ * // Result: "Hi John, this is Sarah Johnson from Dexit Solutions. " +
+ * //         "I know Memorial Hospital uses Epic for their EHR."
  */

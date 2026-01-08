@@ -32,6 +32,16 @@ export default function Navigation() {
               Dashboard
             </button>
             <button
+              onClick={() => navigate('/companies')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive('/companies')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Companies
+            </button>
+            <button
               onClick={() => navigate('/contacts')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 isActive('/contacts')

@@ -7,7 +7,7 @@ import ContactNotes from './ContactNotes'
  * Shows the selected section content with instant switching
  * Replaces {{variables}} with actual contact data
  */
-export default function CallFlowContentPanel({ activeSection, callFlow, contact, notes }) {
+export default function CallFlowContentPanel({ activeSection, callFlow, context, notes, contact }) {
   const [copied, setCopied] = useState(false)
   const [showProTips, setShowProTips] = useState(true)
 
@@ -44,18 +44,23 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
     }
   }
 
-  // Build replacement context from contact and notes
-  const buildContext = () => {
+  // Use the context passed from parent (already built with company + contact data)
+  const getContext = () => {
+    // If context already provided, use it directly
+    if (context) {
+      return context
+    }
+
+    // Fallback (shouldn't happen in company-first architecture)
     return {
-      contact: contact || {},
+      company: {},
+      contact: {},
       rep: {
         name: localStorage.getItem('rep_name') || 'Sarah Johnson',
         first_name: localStorage.getItem('rep_first_name') || 'Sarah',
         company: localStorage.getItem('rep_company') || 'Dexit Solutions'
       },
-      product: {
-        name: contact?.product || 'Dexit'
-      },
+      product: { name: 'Dexit' },
       scriptContext: parseNotesContext(notes || '')
     }
   }
@@ -65,36 +70,36 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
 
     if (!data) return ''
 
-    const context = buildContext()
+    const ctx = getContext()
 
     // Opening and Closing sections
     if (section === 'opening' || section === 'closing') {
-      return replaceScriptVariables(data.content, context)
+      return replaceScriptVariables(data.content, ctx)
     }
 
     // Discovery section
     if (section === 'discovery') {
-      const question = replaceScriptVariables(data.question, context)
-      const why = replaceScriptVariables(data.why || '', context)
+      const question = replaceScriptVariables(data.question, ctx)
+      const why = replaceScriptVariables(data.why || '', ctx)
       return `${question}\n\nWhy: ${why}`
     }
 
     // Transition sections
     if (section === 'transition_to_discovery' || section === 'transition_to_pitch' || section === 'transition') {
-      const trigger = replaceScriptVariables(data.trigger || '', context)
-      const pitch = replaceScriptVariables(data.pitch || data.content || '', context)
+      const trigger = replaceScriptVariables(data.trigger || '', ctx)
+      const pitch = replaceScriptVariables(data.pitch || data.content || '', ctx)
       return trigger && trigger !== 'Custom' ? `When: ${trigger}\n\n${pitch}` : pitch
     }
 
     // Objections section
     if (section === 'objections') {
-      const objection = replaceScriptVariables(data.objection, context)
-      const response = replaceScriptVariables(data.response, context)
+      const objection = replaceScriptVariables(data.objection, ctx)
+      const response = replaceScriptVariables(data.response, ctx)
       let content = `Objection: "${objection}"\n\nResponse:\n${response}`
       if (data.alternatives && data.alternatives.length > 0) {
         content += '\n\nAlternatives:\n'
         data.alternatives.forEach((alt, i) => {
-          const altResponse = replaceScriptVariables(alt, context)
+          const altResponse = replaceScriptVariables(alt, ctx)
           content += `\n${i + 1}. ${altResponse}`
         })
       }
@@ -104,14 +109,14 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
     // Competitor objections section
     if (section === 'competitor_objections') {
       const { competitor, subObjection } = data
-      const objection = replaceScriptVariables(subObjection.objection, context)
-      const response = replaceScriptVariables(subObjection.response, context)
+      const objection = replaceScriptVariables(subObjection.objection, ctx)
+      const response = replaceScriptVariables(subObjection.response, ctx)
       let content = `Competitor: ${competitor.name}\n\nObjection: "${objection}"\n\nResponse:\n${response}`
 
       if (subObjection.alternatives && subObjection.alternatives.length > 0) {
         content += '\n\nAlternatives:\n'
         subObjection.alternatives.forEach((alt, i) => {
-          const altResponse = replaceScriptVariables(alt, context)
+          const altResponse = replaceScriptVariables(alt, ctx)
           content += `\n${i + 1}. ${altResponse}`
         })
       }
@@ -234,11 +239,11 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
       return <div className="text-gray-500">No content available</div>
     }
 
-    const context = buildContext()
+    const ctx = getContext()
 
     // Opening and Closing - Show version content
     if (section === 'opening' || section === 'closing') {
-      const content = replaceScriptVariables(data.content, context)
+      const content = replaceScriptVariables(data.content, ctx)
       return (
         <div className="space-y-4">
           <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded-r-lg">
@@ -269,8 +274,8 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
 
     // Discovery Question
     if (section === 'discovery') {
-      const question = replaceScriptVariables(data.question, context)
-      const why = data.why ? replaceScriptVariables(data.why, context) : ''
+      const question = replaceScriptVariables(data.question, ctx)
+      const why = data.why ? replaceScriptVariables(data.why, ctx) : ''
       return (
         <div className="space-y-4">
           <div className="bg-purple-50 border-l-4 border-purple-600 p-4 rounded-r-lg">
@@ -321,8 +326,8 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
 
     // Transition to Discovery
     if (section === 'transition_to_discovery') {
-      const trigger = replaceScriptVariables(data.trigger || '', context)
-      const pitch = replaceScriptVariables(data.pitch || data.content || '', context)
+      const trigger = replaceScriptVariables(data.trigger || '', ctx)
+      const pitch = replaceScriptVariables(data.pitch || data.content || '', ctx)
       return (
         <div className="space-y-4">
           <div className="bg-teal-50 border-l-4 border-teal-600 p-4 rounded-r-lg">
@@ -358,8 +363,8 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
 
     // Transition to Pitch
     if (section === 'transition_to_pitch') {
-      const trigger = replaceScriptVariables(data.trigger || '', context)
-      const pitch = replaceScriptVariables(data.pitch || data.content || '', context)
+      const trigger = replaceScriptVariables(data.trigger || '', ctx)
+      const pitch = replaceScriptVariables(data.pitch || data.content || '', ctx)
       return (
         <div className="space-y-4">
           <div className="bg-orange-50 border-l-4 border-orange-600 p-4 rounded-r-lg">
@@ -395,8 +400,8 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
 
     // Objection Response
     if (section === 'objections') {
-      const objection = replaceScriptVariables(data.objection, context)
-      const response = replaceScriptVariables(data.response, context)
+      const objection = replaceScriptVariables(data.objection, ctx)
+      const response = replaceScriptVariables(data.response, ctx)
       return (
         <div className="space-y-4">
           <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded-r-lg">
@@ -417,7 +422,7 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
               </div>
               <div className="space-y-3">
                 {data.alternatives.map((alt, i) => {
-                  const altResponse = replaceScriptVariables(alt, context)
+                  const altResponse = replaceScriptVariables(alt, ctx)
                   return (
                     <div key={i} className="flex gap-3">
                       <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-gray-200 text-gray-700 rounded-full text-xs font-medium">
@@ -452,8 +457,8 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
     // Competitor Objections
     if (section === 'competitor_objections') {
       const { competitor, subObjection } = data
-      const objection = replaceScriptVariables(subObjection.objection, context)
-      const response = replaceScriptVariables(subObjection.response, context)
+      const objection = replaceScriptVariables(subObjection.objection, ctx)
+      const response = replaceScriptVariables(subObjection.response, ctx)
 
       return (
         <div className="space-y-4">
@@ -491,7 +496,7 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
               </div>
               <div className="space-y-3">
                 {subObjection.alternatives.map((alt, i) => {
-                  const altResponse = replaceScriptVariables(alt, context)
+                  const altResponse = replaceScriptVariables(alt, ctx)
                   return (
                     <div key={i} className="flex gap-3">
                       <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-gray-200 text-gray-700 rounded-full text-xs font-medium">
@@ -507,7 +512,7 @@ export default function CallFlowContentPanel({ activeSection, callFlow, contact,
             </div>
           )}
 
-          {/* Background context (collapsible) */}
+          {/* Background ctx (collapsible) */}
           {competitor.background && (
             <details className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <summary className="text-xs font-semibold text-gray-700 uppercase cursor-pointer">

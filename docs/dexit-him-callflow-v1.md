@@ -1,7 +1,7 @@
 HIM Manager/Director Call Flow
 OPENING (Conversational & Clear)
 Version 1 (Direct):
-"Hi {{contact.first_name}}, this is {{rep.first_name}} from 314e. We work with healthcare organizations to help them process patient documents faster using AI. I'm calling HIM leaders like yourself because you're the ones who know exactly how time-consuming document processing can be. Do you have a quick minute?"
+"Hi {{contact.first_name}}, this is {{rep.first_name}} from 314e. We help HIM teams automate document processing with AI - things like classification, patient matching, routing - so your staff doesn't have to do it all manually. Is that something that would be helpful for your team?"
 Version 2 (Question-led):
 "Hi {{contact.first_name}}, {{rep.first_name}} from 314e. Quick question - when a patient document comes in, whether it's a fax, scan, or upload, how much of that process is your team doing manually versus having the system do it automatically?"
 Version 3 (Pain Point):

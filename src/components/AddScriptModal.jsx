@@ -3,10 +3,11 @@ import { useState } from 'react'
 export default function AddScriptModal({ isOpen, onClose, onAdd }) {
   const [formData, setFormData] = useState({
     name: '',
-    section_type: 'opening', // opening, discovery, transition, objections, closing
+    section_type: 'opening', // opening, discovery, transition, objections, competitor_objection, closing
     product: 'Dexit',
     approach: 'HIM', // Default approach - REQUIRED
     trigger_type: '',
+    competitor: '', // For competitor objections
     variations: [{ label: 'Version 1', content: '' }]
   })
 
@@ -46,6 +47,11 @@ export default function AddScriptModal({ isOpen, onClose, onAdd }) {
       scriptData.trigger_type = formData.trigger_type
     }
 
+    // Add competitor for competitor objections
+    if (formData.section_type === 'competitor_objection' && formData.competitor) {
+      scriptData.competitor = formData.competitor
+    }
+
     // Store variations in content as JSON (or we could create multiple scripts)
     const validVariations = formData.variations.filter(v => v.content.trim())
 
@@ -62,6 +68,7 @@ export default function AddScriptModal({ isOpen, onClose, onAdd }) {
         product: 'Dexit',
         approach: 'HIM',
         trigger_type: '',
+        competitor: '',
         variations: [{ label: 'Version 1', content: '' }]
       })
       onClose()
@@ -76,7 +83,7 @@ export default function AddScriptModal({ isOpen, onClose, onAdd }) {
       return variations.map((v, i) => {
         return `## Version ${i + 1}: ${v.label}\n${v.content}`
       }).join('\n\n---\n\n')
-    } else if (sectionType === 'objections') {
+    } else if (sectionType === 'objections' || sectionType === 'competitor_objection') {
       // Format as objection with response and alternatives
       const [primary, ...alternatives] = variations
       let formatted = `## ${formData.name}\n**Response:**\n${primary.content}`
@@ -132,8 +139,8 @@ export default function AddScriptModal({ isOpen, onClose, onAdd }) {
 
   if (!isOpen) return null
 
-  const showVariations = ['opening', 'closing', 'objections'].includes(formData.section_type)
-  const variationLabel = formData.section_type === 'objections' ? 'Response' : 'Variation'
+  const showVariations = ['opening', 'transition_to_discovery', 'discovery', 'transition_to_pitch', 'objections', 'competitor_objection', 'closing'].includes(formData.section_type)
+  const variationLabel = (formData.section_type === 'objections' || formData.section_type === 'competitor_objection') ? 'Response' : 'Variation'
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -187,12 +194,43 @@ export default function AddScriptModal({ isOpen, onClose, onAdd }) {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="opening">Opening</option>
+                  <option value="transition_to_discovery">Transition to Discovery</option>
                   <option value="discovery">Discovery Questions</option>
-                  <option value="transition">Transition to Pitch</option>
+                  <option value="transition_to_pitch">Transition to Pitch</option>
                   <option value="objections">Objection Handling</option>
+                  <option value="competitor_objection">Competitor Objection</option>
                   <option value="closing">Closing</option>
                 </select>
               </div>
+
+              {/* Competitor Selector (for competitor objections) */}
+              {formData.section_type === 'competitor_objection' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Competitor *
+                  </label>
+                  <select
+                    value={formData.competitor}
+                    onChange={(e) => handleChange('competitor', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select competitor...</option>
+                    <option value="OnBase">OnBase (Hyland)</option>
+                    <option value="Epic">Epic (Hyperdrive/Gallery)</option>
+                    <option value="Cerner">Cerner/Oracle Health (WQM)</option>
+                    <option value="Athena">athenahealth/athenaOne</option>
+                    <option value="eCW">eClinicalWorks</option>
+                    <option value="Nextgen">Nextgen</option>
+                    <option value="RightFax">RightFax (OpenText)</option>
+                    <option value="Custom">Custom/Internal System</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This objection will appear under the selected competitor
+                  </p>
+                </div>
+              )}
 
               {/* Call Flow / Approach (REQUIRED for Dexit) */}
               {formData.product === 'Dexit' && (

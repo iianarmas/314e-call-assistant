@@ -7,6 +7,8 @@ export default function EditContactModal({ isOpen, onClose, onUpdate, contact })
     organization: '',
     title: '',
     product: 'Dexit',
+    competitor_system: '',
+    competitor_notes: '',
     trigger_type: '',
     trigger_details: '',
     notes: ''
@@ -23,6 +25,8 @@ export default function EditContactModal({ isOpen, onClose, onUpdate, contact })
         organization: contact.organization || contact.company || '',
         title: contact.title || '',
         product: contact.product || 'Dexit',
+        competitor_system: contact.competitor_system || '',
+        competitor_notes: contact.competitor_notes || '',
         trigger_type: contact.trigger_type || '',
         trigger_details: contact.trigger_details || '',
         notes: contact.notes || ''
@@ -46,6 +50,8 @@ export default function EditContactModal({ isOpen, onClose, onUpdate, contact })
       organization: formData.organization.trim(),
       title: formData.title.trim() || null,
       product: formData.product,
+      competitor_system: formData.competitor_system.trim() || null,
+      competitor_notes: formData.competitor_notes.trim() || null,
       trigger_type: formData.trigger_type.trim() || null,
       trigger_details: formData.trigger_details.trim() || null,
       notes: formData.notes.trim() || null
@@ -160,6 +166,49 @@ export default function EditContactModal({ isOpen, onClose, onUpdate, contact })
                   <option value="Dexit">Dexit</option>
                   <option value="Muspell">Muspell</option>
                 </select>
+              </div>
+
+              {/* Competitor System */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Current Document Management System
+                </label>
+                <select
+                  name="competitor_system"
+                  value={formData.competitor_system}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Unknown / Not Sure</option>
+                  <option value="OnBase">OnBase (Hyland)</option>
+                  <option value="Epic">Epic (Hyperdrive/Gallery)</option>
+                  <option value="Cerner">Cerner/Oracle Health (WQM)</option>
+                  <option value="Athena">athenahealth/athenaOne</option>
+                  <option value="eCW">eClinicalWorks</option>
+                  <option value="Nextgen">Nextgen</option>
+                  <option value="RightFax">RightFax (OpenText)</option>
+                  <option value="Custom">Custom/Internal System</option>
+                  <option value="Multiple">Multiple Systems</option>
+                  <option value="None">No DMS (Manual Process)</option>
+                </select>
+              </div>
+
+              {/* Competitor Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Competitor Details
+                </label>
+                <textarea
+                  name="competitor_notes"
+                  value={formData.competitor_notes}
+                  onChange={handleChange}
+                  rows="2"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Using OnBase for 5 years, heavily customized for surgery workflows"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Note version, customizations, integrations, or pain points with current system
+                </p>
               </div>
 
               {/* Trigger fields (only for Muspell) */}

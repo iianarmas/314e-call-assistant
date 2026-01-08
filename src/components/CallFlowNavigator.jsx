@@ -7,11 +7,15 @@ import { useState } from 'react'
 export default function CallFlowNavigator({ callFlow, activeSection, onSectionSelect }) {
   const [expandedSections, setExpandedSections] = useState({
     opening: true,
+    transition_to_discovery: true,
     discovery: true,
-    transition: true,
+    transition_to_pitch: true,
     objections: true,
+    competitor_objections: false,
     closing: true
   })
+
+  const [expandedCompetitors, setExpandedCompetitors] = useState({})
 
   if (!callFlow) {
     return (
@@ -39,19 +43,30 @@ export default function CallFlowNavigator({ callFlow, activeSection, onSectionSe
   // Section icons
   const sectionIcons = {
     opening: '👋',
+    transition_to_discovery: '➡️',
     discovery: '🔍',
-    transition: '🔄',
+    transition_to_pitch: '🔄',
     objections: '💬',
+    competitor_objections: '🏢',
     closing: '🤝'
   }
 
   // Section labels
   const sectionLabels = {
     opening: 'Opening',
+    transition_to_discovery: 'Transition to Discovery',
     discovery: 'Discovery',
-    transition: 'Transition',
+    transition_to_pitch: 'Transition to Pitch',
     objections: 'Objections',
+    competitor_objections: 'Competitor Objections',
     closing: 'Closing'
+  }
+
+  const toggleCompetitor = (competitorId) => {
+    setExpandedCompetitors(prev => ({
+      ...prev,
+      [competitorId]: !prev[competitorId]
+    }))
   }
 
   const isActive = (sectionName, itemIndex = null) => {
@@ -95,6 +110,28 @@ export default function CallFlowNavigator({ callFlow, activeSection, onSectionSe
           ))}
         </NavSection>
 
+        {/* TRANSITION TO DISCOVERY */}
+        {callFlow.sections.transition_to_discovery && callFlow.sections.transition_to_discovery.length > 0 && (
+          <NavSection
+            name="transition_to_discovery"
+            label={sectionLabels.transition_to_discovery}
+            icon={sectionIcons.transition_to_discovery}
+            expanded={expandedSections.transition_to_discovery}
+            onToggle={() => toggleSection('transition_to_discovery')}
+            count={callFlow.sections.transition_to_discovery.length}
+          >
+            {callFlow.sections.transition_to_discovery.map((transition, index) => (
+              <NavItem
+                key={index}
+                label={transition.dbScriptName || transition.label || (transition.trigger && transition.trigger !== 'Custom' ? transition.trigger : `Version ${index + 1}`)}
+                active={isActive('transition_to_discovery', index)}
+                onClick={() => handleItemClick('transition_to_discovery', index, transition)}
+                number={index + 1}
+              />
+            ))}
+          </NavSection>
+        )}
+
         {/* DISCOVERY */}
         <NavSection
           name="discovery"
@@ -115,25 +152,27 @@ export default function CallFlowNavigator({ callFlow, activeSection, onSectionSe
           ))}
         </NavSection>
 
-        {/* TRANSITION */}
-        <NavSection
-          name="transition"
-          label={sectionLabels.transition}
-          icon={sectionIcons.transition}
-          expanded={expandedSections.transition}
-          onToggle={() => toggleSection('transition')}
-          count={callFlow.sections.transition.length}
-        >
-          {callFlow.sections.transition.map((transition, index) => (
-            <NavItem
-              key={index}
-              label={transition.trigger}
-              active={isActive('transition', index)}
-              onClick={() => handleItemClick('transition', index, transition)}
-              number={index + 1}
-            />
-          ))}
-        </NavSection>
+        {/* TRANSITION TO PITCH */}
+        {callFlow.sections.transition_to_pitch && callFlow.sections.transition_to_pitch.length > 0 && (
+          <NavSection
+            name="transition_to_pitch"
+            label={sectionLabels.transition_to_pitch}
+            icon={sectionIcons.transition_to_pitch}
+            expanded={expandedSections.transition_to_pitch}
+            onToggle={() => toggleSection('transition_to_pitch')}
+            count={callFlow.sections.transition_to_pitch.length}
+          >
+            {callFlow.sections.transition_to_pitch.map((transition, index) => (
+              <NavItem
+                key={index}
+                label={transition.dbScriptName || transition.label || (transition.trigger && transition.trigger !== 'Custom' ? transition.trigger : `Version ${index + 1}`)}
+                active={isActive('transition_to_pitch', index)}
+                onClick={() => handleItemClick('transition_to_pitch', index, transition)}
+                number={index + 1}
+              />
+            ))}
+          </NavSection>
+        )}
 
         {/* OBJECTIONS */}
         <NavSection
@@ -154,6 +193,83 @@ export default function CallFlowNavigator({ callFlow, activeSection, onSectionSe
             />
           ))}
         </NavSection>
+
+        {/* COMPETITOR OBJECTIONS */}
+        {callFlow.sections.competitor_objections && callFlow.sections.competitor_objections.competitors && callFlow.sections.competitor_objections.competitors.length > 0 && (
+          <div className="mb-2">
+            <button
+              onClick={() => toggleSection('competitor_objections')}
+              className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">{sectionIcons.competitor_objections}</span>
+                <span>{sectionLabels.competitor_objections}</span>
+                <span className="text-xs text-gray-500">
+                  ({callFlow.sections.competitor_objections.competitors.reduce((sum, c) => sum + c.subObjections.length, 0)})
+                </span>
+              </div>
+              <svg
+                className={`w-4 h-4 transition-transform ${expandedSections.competitor_objections ? 'rotate-90' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {expandedSections.competitor_objections && (
+              <div className="ml-4 mt-2 space-y-1">
+                {callFlow.sections.competitor_objections.competitors.map((competitor) => (
+                  <div key={competitor.id}>
+                    {/* Competitor name (collapsible) */}
+                    <button
+                      onClick={() => toggleCompetitor(competitor.id)}
+                      className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 transition-colors flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-800">{competitor.name}</span>
+                        <span className="text-xs text-gray-500">({competitor.subObjections.length})</span>
+                      </div>
+                      <svg
+                        className={`w-3 h-3 transition-transform ${expandedCompetitors[competitor.id] ? 'rotate-90' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+
+                    {/* Sub-objections */}
+                    {expandedCompetitors[competitor.id] && (
+                      <div className="ml-4 space-y-1">
+                        {competitor.subObjections.map((subObj, idx) => (
+                          <button
+                            key={subObj.id}
+                            onClick={() => handleItemClick('competitor_objections', idx, { competitor, subObjection: subObj })}
+                            className={`
+                              w-full text-left px-3 py-2 text-sm rounded transition-colors
+                              ${activeSection?.section === 'competitor_objections' &&
+                                activeSection?.data?.competitor?.id === competitor.id &&
+                                activeSection?.data?.subObjection?.id === subObj.id
+                                ? 'bg-indigo-100 text-indigo-900 font-medium'
+                                : 'hover:bg-gray-50 text-gray-700'
+                              }
+                            `}
+                          >
+                            <span className="text-xs text-gray-500 mr-2">{idx + 1}.</span>
+                            "{subObj.objection}"
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* CLOSING */}
         <NavSection

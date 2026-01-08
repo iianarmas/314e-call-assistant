@@ -110,7 +110,10 @@ export default function SmartNotesPanel({
       {/* Header */}
       <div className="flex-none px-4 py-3 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold text-gray-900">📝 Quick Notes</h3>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900">📝 Call Session Notes</h3>
+            <p className="text-xs text-gray-500 mt-0.5">For AI pitch generation (not saved to contact)</p>
+          </div>
           <div className="flex items-center gap-2">
             <span className={`text-xs ${hasUnsavedChanges ? 'text-orange-600' : 'text-gray-500'}`}>
               {hasUnsavedChanges ? '● Unsaved' : formatLastSaved()}

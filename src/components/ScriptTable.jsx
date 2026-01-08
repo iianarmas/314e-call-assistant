@@ -35,7 +35,13 @@ export default function ScriptTable({
     }
 
     if (typeFilter !== 'All') {
-      filtered = filtered.filter(s => s.script_type === typeFilter)
+      filtered = filtered.filter(s => {
+        // Check both script_type and section_type for backward compatibility
+        const type = s.section_type || s.script_type
+        // Map old 'transition' to 'transition_to_pitch' for filtering
+        const mappedType = type === 'transition' ? 'transition_to_pitch' : type
+        return mappedType === typeFilter
+      })
     }
 
     if (statusFilter !== 'All') {
@@ -137,7 +143,11 @@ export default function ScriptTable({
             >
               <option value="All">All Types</option>
               <option value="opening">Opening</option>
+              <option value="transition_to_discovery">Transition to Discovery</option>
+              <option value="discovery">Discovery</option>
+              <option value="transition_to_pitch">Transition to Pitch</option>
               <option value="objection">Objection</option>
+              <option value="competitor_objection">Competitor Objection</option>
               <option value="closing">Closing</option>
             </select>
           </div>
@@ -274,7 +284,16 @@ export default function ScriptTable({
                     {script.name}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600 border-r border-b border-gray-200">
-                    <span className="capitalize">{script.script_type}</span>
+                    <span className="capitalize">
+                      {(() => {
+                        const type = script.section_type || script.script_type
+                        // Format display names
+                        if (type === 'transition_to_discovery') return 'Transition to Discovery'
+                        if (type === 'transition_to_pitch' || type === 'transition') return 'Transition to Pitch'
+                        if (type === 'competitor_objection') return 'Competitor Objection'
+                        return type
+                      })()}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-sm border-r border-b border-gray-200">
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${

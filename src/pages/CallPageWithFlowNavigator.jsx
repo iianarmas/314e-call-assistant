@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { loadAllCallFlows } from '../utils/callFlowParser'
-import { mergeScriptsIntoCallFlows } from '../utils/mergeScriptsIntoCallFlows'
+import { mergeScriptsIntoCallFlows, mergeCompetitorObjectionsIntoFlows } from '../utils/mergeScriptsIntoCallFlows'
 import { useCallFlowNavigation } from '../hooks/useCallFlowNavigation'
 import { useAIPitchBuilder } from '../hooks/useAIPitchBuilder'
 import { useCallSession } from '../hooks/useCallSession'
@@ -93,7 +93,7 @@ export default function CallPageWithFlowNavigator() {
         }
 
         // Merge database scripts into call flows
-        const mergedFlows = mergeScriptsIntoCallFlows(flows, dbScripts || [])
+        let mergedFlows = mergeScriptsIntoCallFlows(flows, dbScripts || [])
         console.log('Merged call flows with database scripts:', mergedFlows.map(f => ({
           name: f.name,
           approach: f.approach,
@@ -104,6 +104,21 @@ export default function CallPageWithFlowNavigator() {
             closing: f.sections.closing.versions.length
           }
         })))
+
+        // Load competitor objections markdown
+        try {
+          const response = await fetch('/docs/dobj-main.md')
+          if (response.ok) {
+            const competitorMd = await response.text()
+            // Merge competitor objections into all call flows
+            mergedFlows = mergeCompetitorObjectionsIntoFlows(mergedFlows, competitorMd, dbScripts || [])
+            console.log('Merged competitor objections:', mergedFlows[0]?.sections?.competitor_objections?.competitors?.length || 0, 'competitors')
+          } else {
+            console.warn('Competitor objections document not found')
+          }
+        } catch (compError) {
+          console.error('Error loading competitor objections:', compError)
+        }
 
         setCallFlows(mergedFlows)
       } catch (err) {

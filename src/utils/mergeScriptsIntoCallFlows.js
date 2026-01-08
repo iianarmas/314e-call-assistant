@@ -3,6 +3,8 @@
  * Takes database scripts and integrates them into the appropriate call flow sections
  */
 
+import { parseCompetitorObjections } from './competitorObjectionsParser'
+
 /**
  * Parse database script content based on section type
  * @param {string} content - Script content (may be formatted markdown)
@@ -99,13 +101,29 @@ function parseScriptContent(content, sectionType) {
       why: why.trim(),
       keywords: keywords
     }
-  } else if (sectionType === 'transition') {
-    // Parse transition pitch
-    // Simple format for now - just the content
-    return {
-      trigger: 'Custom',
-      pitch: content.trim(),
-      keywords: []
+  } else if (sectionType === 'transition_to_discovery' || sectionType === 'transition_to_pitch' || sectionType === 'transition') {
+    // Parse transition - support variations format
+    // Format: ## Version 1: Label\ncontent\n---\n## Version 2: Label\ncontent
+    // OR simple format: just the content
+
+    // Check if it has version format
+    if (content.includes('## Version')) {
+      // Parse as variations (similar to opening/closing)
+      return {
+        trigger: 'Custom',
+        pitch: content,
+        content: content,
+        label: 'Version 1',
+        keywords: []
+      }
+    } else {
+      // Simple format
+      return {
+        trigger: 'Custom',
+        pitch: content.trim(),
+        content: content.trim(),
+        keywords: []
+      }
     }
   }
 
@@ -137,16 +155,19 @@ export function mergeScriptsIntoCallFlows(callFlows, dbScripts) {
     if (!scriptsByFlow[flowKey]) {
       scriptsByFlow[flowKey] = {
         opening: [],
+        transition_to_discovery: [],
         discovery: [],
-        transition: [],
+        transition_to_pitch: [],
         objections: [],
         closing: []
       }
     }
 
     const sectionType = script.section_type || script.script_type
-    if (scriptsByFlow[flowKey][sectionType]) {
-      scriptsByFlow[flowKey][sectionType].push(script)
+    // Map old 'transition' to 'transition_to_pitch' for backward compatibility
+    const mappedSectionType = sectionType === 'transition' ? 'transition_to_pitch' : sectionType
+    if (scriptsByFlow[flowKey][mappedSectionType]) {
+      scriptsByFlow[flowKey][mappedSectionType].push(script)
     }
   })
 
@@ -203,12 +224,26 @@ export function mergeScriptsIntoCallFlows(callFlows, dbScripts) {
       })
     }
 
-    // Merge transition pitches
-    if (scriptsForFlow.transition.length > 0) {
-      scriptsForFlow.transition.forEach(script => {
-        const parsed = parseScriptContent(script.content, 'transition')
+    // Merge transition to discovery
+    if (scriptsForFlow.transition_to_discovery.length > 0) {
+      scriptsForFlow.transition_to_discovery.forEach(script => {
+        const parsed = parseScriptContent(script.content, 'transition_to_discovery')
         if (parsed) {
-          flow.sections.transition.push({
+          flow.sections.transition_to_discovery.push({
+            ...parsed,
+            dbScriptId: script.id,
+            dbScriptName: script.name
+          })
+        }
+      })
+    }
+
+    // Merge transition to pitch
+    if (scriptsForFlow.transition_to_pitch.length > 0) {
+      scriptsForFlow.transition_to_pitch.forEach(script => {
+        const parsed = parseScriptContent(script.content, 'transition_to_pitch')
+        if (parsed) {
+          flow.sections.transition_to_pitch.push({
             ...parsed,
             dbScriptId: script.id,
             dbScriptName: script.name
@@ -235,4 +270,67 @@ export function mergeScriptsIntoCallFlows(callFlows, dbScripts) {
   })
 
   return mergedFlows
+}
+
+/**
+ * Merge competitor objections into all call flows
+ * @param {Array} callFlows - Array of call flow objects
+ * @param {string} competitorMd - Markdown content from dobj-main.md
+ * @param {Array} dbScripts - Optional database scripts for competitor objections
+ * @returns {Array} Call flows with competitor objections integrated
+ */
+export function mergeCompetitorObjectionsIntoFlows(callFlows, competitorMd, dbScripts = []) {
+  // Parse competitor objections from markdown
+  const competitorData = parseCompetitorObjections(competitorMd)
+
+  // Merge database competitor scripts if any
+  const competitorScripts = dbScripts.filter(s =>
+    s.is_active && (s.section_type === 'competitor_objection' || s.script_type === 'competitor_objection')
+  )
+
+  // Add database competitor objections to the parsed data
+  competitorScripts.forEach(script => {
+    const parsed = parseScriptContent(script.content, 'objections')
+    if (parsed) {
+      // Find or create competitor entry
+      let competitor = competitorData.competitors.find(c =>
+        c.id === script.competitor_id || c.name.toLowerCase() === script.competitor?.toLowerCase()
+      )
+
+      if (!competitor) {
+        // Create new competitor entry for database script
+        competitor = {
+          id: script.competitor_id || `custom_${script.id}`,
+          name: script.competitor || 'Custom Competitor',
+          commonObjections: [],
+          background: '',
+          initialResponse: '',
+          subObjections: [],
+          bottomLine: '',
+          keywords: [script.competitor?.toLowerCase() || 'custom']
+        }
+        competitorData.competitors.push(competitor)
+      }
+
+      // Add sub-objection
+      competitor.subObjections.push({
+        id: `db_${script.id}`,
+        objection: script.name,
+        response: parsed.response,
+        alternatives: parsed.alternatives || [],
+        keywords: [],
+        dbScriptId: script.id,
+        dbScriptName: script.name
+      })
+    }
+  })
+
+  // Merge competitor data into all call flows (same for all)
+  return callFlows.map(flow => ({
+    ...flow,
+    sections: {
+      ...flow.sections,
+      competitor_objections: competitorData
+    }
+  }))
 }

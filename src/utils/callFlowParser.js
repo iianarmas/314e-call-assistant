@@ -27,9 +27,11 @@ export function parseCallFlow(markdown, filename = '') {
     version: metadata.version,
     sections: {
       opening: parseOpeningSection(sections.opening || []),
+      transition_to_discovery: parseTransitionSection(sections.transition_to_discovery || []),
       discovery: parseDiscoverySection(sections.discovery || []),
-      transition: parseTransitionSection(sections.transition || []),
+      transition_to_pitch: parseTransitionSection(sections.transition_to_pitch || []),
       objections: parseObjectionsSection(sections.objections || []),
+      competitor_objections: null, // Will be merged later from dobj-main.md
       closing: parseClosingSection(sections.closing || [])
     }
   }
@@ -82,8 +84,9 @@ function extractMetadata(filename) {
 function splitIntoSections(lines) {
   const sections = {
     opening: [],
+    transition_to_discovery: [],
     discovery: [],
-    transition: [],
+    transition_to_pitch: [],
     objections: [],
     closing: []
   }
@@ -94,15 +97,18 @@ function splitIntoSections(lines) {
     const line = lines[i].trim()
     const upperLine = line.toUpperCase()
 
-    // Detect section headers
+    // Detect section headers (order matters - check specific before general)
     if (upperLine.includes('OPENING')) {
       currentSection = 'opening'
       continue
-    } else if (upperLine.includes('DISCOVERY QUESTIONS')) {
+    } else if (upperLine.includes('TRANSITION TO DISCOVERY')) {
+      currentSection = 'transition_to_discovery'
+      continue
+    } else if (upperLine.includes('DISCOVERY QUESTIONS') || upperLine.includes('DISCOVERY')) {
       currentSection = 'discovery'
       continue
-    } else if (upperLine.includes('TRANSITION TO PITCH') || upperLine.includes('TRANSITION')) {
-      currentSection = 'transition'
+    } else if (upperLine.includes('TRANSITION TO PITCH')) {
+      currentSection = 'transition_to_pitch'
       continue
     } else if (upperLine.includes('OBJECTION HANDLING') || upperLine === 'OBJECTION HANDLING') {
       currentSection = 'objections'

@@ -43,7 +43,6 @@ If they mention High Volume:
 "Wow, [X] documents a day with a team of [Y]? That's a lot. What we do is take those repetitive tasks off your team's plate. Our AI can automatically identify document types, pull patient information, and get everything where it needs to be - so your team can focus on the exceptions instead of processing every single document manually."
 If they mention errors/misfiles:
 "Yeah, that's a common problem when everything's manual. Our AI is actually trained specifically on healthcare documents - it's looked at thousands of lab reports, referrals, clinical notes, all of it. So it gets really good at matching documents to the right patient and catching things that might get misfiled."
-
 THE ASK
 Keep it simple and low-pressure:
 "Here's what I'd like to do: Let me connect you with one of our experts who can show you exactly how this would work with your [mention their EHR] setup and your specific process. It's usually about 15-20 minutes, and you'll see real examples of how the AI handles the documents. Would sometime this week or next work for you?"

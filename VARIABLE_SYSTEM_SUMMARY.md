@@ -134,7 +134,7 @@ const content = replaceScriptVariables(data.content, context)
    ```javascript
    {
      contact: { first_name: "John", last_name: "Smith", ... },
-     rep: { name: "Sarah Johnson", company: "Dexit Solutions" },
+     rep: { name: "Chris Armas", company: "314e Corporation" },
      product: { name: "Dexit" },
      scriptContext: { ehr: "Cerner", dms: "OnBase", volume: "500/day" }
    }
@@ -142,7 +142,7 @@ const content = replaceScriptVariables(data.content, context)
 5. **replaceScriptVariables() replaces all {{variables}}**:
    ```
    Input:  "Hi {{contact.first_name}}, this is {{rep.name}} from {{rep.company}}."
-   Output: "Hi John, this is Sarah Johnson from Dexit Solutions."
+   Output: "Hi John, this is Chris Johnson from 314e Corporation."
    ```
 6. **Personalized script displayed** to user
 
@@ -204,7 +204,7 @@ saveRepSettings({
 ```
 
 **Default Values** (if not configured):
-- Rep Name: "Sarah Johnson"
+- Rep Name: "Chris Armas"
 - Rep Company: "Dexit Solutions"
 
 ---

@@ -243,8 +243,8 @@ export default function CallPageWithFlowNavigator() {
         last_name: lastName
       },
       rep: {
-        name: localStorage.getItem('rep_name') || 'Sarah Johnson',
-        first_name: localStorage.getItem('rep_first_name') || 'Sarah',
+        name: localStorage.getItem('rep_name') || 'Chris Armas',
+        first_name: localStorage.getItem('rep_first_name') || 'Chris',
         company: localStorage.getItem('rep_company') || 'Dexit Solutions'
       },
       product: {

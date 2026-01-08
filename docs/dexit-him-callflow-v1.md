@@ -1,11 +1,5 @@
 HIM Manager/Director Call Flow
 OPENING (Conversational & Clear)
-Version 1 (Direct):
-"Hi {{contact.first_name}}, this is {{rep.first_name}} from 314e. We help HIM teams automate document processing with AI - things like classification, patient matching, routing - so your staff doesn't have to do it all manually. Is that something that would be helpful for your team?"
-Version 2 (Question-led):
-"Hi {{contact.first_name}}, {{rep.first_name}} from 314e. Quick question - when a patient document comes in, whether it's a fax, scan, or upload, how much of that process is your team doing manually versus having the system do it automatically?"
-Version 3 (Pain Point):
-"Hi {{contact.first_name}}, {{rep.first_name}} with 314e. I've been talking to a lot of HIM managers lately, and they're telling me their teams are spending hours every day just sorting documents, matching them to the right patients, and getting them into the EHR. Is that something you're dealing with too?"
 
 DISCOVERY QUESTIONS (Natural Flow)
 Start with easy ones, build rapport:

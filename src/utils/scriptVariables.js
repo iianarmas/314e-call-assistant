@@ -61,11 +61,11 @@ export function replaceScriptVariables(content, context = {}) {
     'contact.organization': company.name || '[Organization]',
 
     // Sales rep information (from settings or defaults)
-    'rep_name': rep.name || 'Sarah Johnson',
-    'rep_first_name': rep.first_name || rep.name?.split(' ')[0] || 'Sarah',
+    'rep_name': rep.name || 'Chris Armas',
+    'rep_first_name': rep.first_name || rep.name?.split(' ')[0] || 'Chris',
     'rep_company': rep.company || 'Dexit Solutions',
-    'rep.name': rep.name || 'Sarah Johnson',
-    'rep.first_name': rep.first_name || rep.name?.split(' ')[0] || 'Sarah',
+    'rep.name': rep.name || 'Chris Armas',
+    'rep.first_name': rep.first_name || rep.name?.split(' ')[0] || 'Chris',
     'rep.company': rep.company || 'Dexit Solutions',
 
     // Product information
@@ -224,6 +224,6 @@ export function buildReplacementContext(company, contact, notes = '', product = 
  * const context = buildReplacementContext(company, contact, notes, product)
  * const personalized = replaceScriptVariables(script, context)
  *
- * // Result: "Hi John, this is Sarah Johnson from Dexit Solutions. " +
+ * // Result: "Hi John, this is Chris Armas from Dexit Solutions. " +
  * //         "I know Memorial Hospital uses Epic for their EHR."
  */

@@ -53,4 +53,8 @@ Alternative ask:
 OBJECTION HANDLING
 
 CLOSING
+Keep it simple and low-pressure:
+"Here's what I'd like to do: Let me connect you with one of our experts who can show you exactly how this would work with your [mention their EHR] setup and your specific process. It's usually about 20-30 minutes, and you'll see real examples of how the AI handles the documents. Would sometime this week or next work for you? Awesome. Let me grab a couple of times from you. What does [this week/next week] look like? (Get 2-3 time slots, then:) Perfect. I'll send you a calendar invite to [email]. You'll be meeting with [SME name], and they'll walk you through exactly how this works with your setup. Sound good?"
 
+Alternative ask:
+"I think you'd find it really valuable to see this in action with your actual workflow. Our specialist can walk you through it - usually takes about 20-30 minutes. What does your calendar look like this week? Awesome. Let me grab a couple of times from you. What does [this week/next week] look like? (Get 2-3 time slots, then:) Perfect. I'll send you a calendar invite to [email]. You'll be meeting with [SME name], and they'll walk you through exactly how this works with your setup. Sound good?"
